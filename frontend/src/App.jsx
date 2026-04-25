@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
+import { BudgetProvider } from "./hooks/useBudget.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Expenses from "./pages/Expenses.jsx";
@@ -37,64 +38,66 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              <GuestRoute>
-                <Login />
-              </GuestRoute>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <GuestRoute>
-                <Signup />
-              </GuestRoute>
-            }
-          />
-          <Route
-            path="/forgot-password"
-            element={
-              <GuestRoute>
-                <ForgotPassword />
-              </GuestRoute>
-            }
-          />
-          <Route
-            path="/"
-            element={
-              <ProtectedLayout>
-                <Dashboard />
-              </ProtectedLayout>
-            }
-          />
-          <Route
-            path="/expenses"
-            element={
-              <ProtectedLayout>
-                <Expenses />
-              </ProtectedLayout>
-            }
-          />
-          <Route
-            path="/income"
-            element={
-              <ProtectedLayout>
-                <Income />
-              </ProtectedLayout>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedLayout>
-                <Profile />
-              </ProtectedLayout>
-            }
-          />
-        </Routes>
+        <BudgetProvider>
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                <GuestRoute>
+                  <Login />
+                </GuestRoute>
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                <GuestRoute>
+                  <Signup />
+                </GuestRoute>
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <GuestRoute>
+                  <ForgotPassword />
+                </GuestRoute>
+              }
+            />
+            <Route
+              path="/"
+              element={
+                <ProtectedLayout>
+                  <Dashboard />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedLayout>
+                  <Expenses />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/income"
+              element={
+                <ProtectedLayout>
+                  <Income />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedLayout>
+                  <Profile />
+                </ProtectedLayout>
+              }
+            />
+          </Routes>
+        </BudgetProvider>
       </AuthProvider>
     </BrowserRouter>
   );

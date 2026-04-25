@@ -86,6 +86,15 @@ export const expenseApi = {
   remove: (id) => request(`/expenses/${id}`, { method: "DELETE" })
 };
 
+export const budgetApi = {
+  get: (month) => request(`/budget${month ? `?month=${encodeURIComponent(month)}` : ""}`),
+  set: (payload) =>
+    request("/budget/set", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    })
+};
+
 export const incomeApi = {
   list: () => request("/income"),
   create: (payload) =>

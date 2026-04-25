@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import MetricCard from "../components/MetricCard.jsx";
 import TransactionList from "../components/TransactionList.jsx";
 import { useAuth } from "../hooks/useAuth.jsx";
+import { useBudget } from "../hooks/useBudget.jsx";
 import { expenseApi, incomeApi } from "../services/api.js";
 import { formatCurrency } from "../utils/currency.js";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const { budgetAmount, loading: budgetLoading, error: budgetError, loadBudget } = useBudget();
   const [expenses, setExpenses] = useState([]);
   const [incomes, setIncomes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +31,11 @@ const Dashboard = () => {
     }
   }, []);
 
+  const refreshDashboard = useCallback(() => {
+    loadData();
+    loadBudget();
+  }, [loadBudget, loadData]);
+
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -35,12 +44,23 @@ const Dashboard = () => {
     const totalIncome = incomes.reduce((sum, item) => sum + Number(item.amount), 0);
     const totalExpenses = expenses.reduce((sum, item) => sum + Number(item.amount), 0);
     return {
-      totalBudget: totalIncome,
+      totalBudget: budgetAmount,
       totalIncome,
       totalExpenses,
-      remaining: totalIncome - totalExpenses
+      remaining: budgetAmount - totalExpenses
     };
-  }, [expenses, incomes]);
+  }, [budgetAmount, expenses, incomes]);
+
+  const budgetProgress = useMemo(() => {
+    const usedPercent = budgetAmount > 0 ? Math.min((summary.totalExpenses / budgetAmount) * 100, 100) : 0;
+    const progressTone = usedPercent > 90 ? "danger" : usedPercent >= 70 ? "warning" : "success";
+
+    return {
+      usedPercent,
+      progressTone,
+      exceeded: budgetAmount > 0 && summary.totalExpenses > budgetAmount
+    };
+  }, [budgetAmount, summary.totalExpenses]);
 
   const chartData = useMemo(
     () => [
@@ -66,7 +86,7 @@ const Dashboard = () => {
         ...incomes.map((item) => ({ ...item, kind: "income" }))
       ]
         .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 6),
+        .slice(0, 5),
     [expenses, incomes]
   );
 
@@ -77,17 +97,32 @@ const Dashboard = () => {
           <p>Dashboard</p>
           <h1>Welcome, {user?.username}</h1>
         </div>
-        <button className="ghost-button" onClick={loadData}>Refresh</button>
+        <button className="ghost-button" onClick={refreshDashboard}>Refresh</button>
       </div>
 
       {error && <p className="form-error">{error}</p>}
+      {budgetError && <p className="form-error">{budgetError}</p>}
 
       <div className="metric-grid">
-        <MetricCard label="Total Budget" value={formatCurrency(summary.totalBudget)} />
-        <MetricCard label="Total Income" value={formatCurrency(summary.totalIncome)} tone="success" />
+        <MetricCard label="Monthly Budget" value={formatCurrency(summary.totalBudget)} />
         <MetricCard label="Total Expenses" value={formatCurrency(summary.totalExpenses)} tone="danger" />
+        <MetricCard label="Total Income" value={formatCurrency(summary.totalIncome)} tone="success" />
         <MetricCard label="Remaining Balance" value={formatCurrency(summary.remaining)} tone="accent" />
       </div>
+
+      <article className="panel dashboard-budget-panel">
+        <div className="panel-heading">
+          <h2>Budget Progress</h2>
+          {budgetLoading ? <span>Loading...</span> : budgetAmount <= 0 && <span>No budget set for this month</span>}
+        </div>
+        <div className={`budget-progress ${budgetProgress.progressTone}`}>
+          <span style={{ width: `${budgetProgress.usedPercent}%` }} />
+        </div>
+        <div className="budget-footer">
+          <small>{budgetProgress.usedPercent.toFixed(1)}% of budget used</small>
+          {budgetProgress.exceeded && <strong className="form-error">Budget exceeded</strong>}
+        </div>
+      </article>
 
       <div className="dashboard-grid">
         <article className="panel chart-panel">
@@ -126,6 +161,7 @@ const Dashboard = () => {
       <article className="panel">
         <div className="panel-heading">
           <h2>Recent Transactions</h2>
+          <button className="ghost-button" onClick={() => navigate("/expenses")}>View All</button>
         </div>
         <TransactionList items={recentTransactions} />
       </article>

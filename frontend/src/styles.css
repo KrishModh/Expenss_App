@@ -536,8 +536,163 @@ select:focus {
   margin-bottom: 16px;
 }
 
+.expense-summary-grid {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.expense-total-card,
+.payment-card {
+  box-shadow: none;
+}
+
+.expense-total-card {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+}
+
+.expense-total-card span,
+.payment-card span,
+.payment-card small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.expense-total-card strong {
+  font-size: 1.75rem;
+}
+
+.payment-card {
+  display: grid;
+  gap: 10px;
+}
+
+.payment-card-top {
+  display: grid;
+  gap: 6px;
+}
+
+.payment-card-top strong {
+  font-size: 1.1rem;
+}
+
+.payment-progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--line);
+}
+
+.payment-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+
+.budget-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.budget-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.budget-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.budget-metrics div {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.budget-metrics span,
+.budget-footer small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.budget-metrics strong {
+  font-size: 1.25rem;
+}
+
+.budget-progress {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--line);
+}
+
+.budget-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 180ms ease;
+}
+
+.budget-progress.success span {
+  background: var(--success);
+}
+
+.budget-progress.warning span {
+  background: #eab308;
+}
+
+.budget-progress.danger span {
+  background: var(--danger);
+}
+
+.budget-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .table-wrap {
   overflow-x: auto;
+}
+
+.transaction-table-wrap {
+  max-height: 400px;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+
+.transaction-table-wrap::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.transaction-table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.transaction-table-wrap::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 8px;
+}
+
+.transaction-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-strong);
 }
 
 table {
@@ -653,6 +808,9 @@ th {
 
   .metric-grid,
   .dashboard-grid,
+  .expense-summary-grid,
+  .budget-form,
+  .budget-metrics,
   .management-grid {
     grid-template-columns: 1fr;
   }

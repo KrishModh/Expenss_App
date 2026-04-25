@@ -8,6 +8,7 @@ import { authRouter } from "./routes/authRoutes.js";
 import { expenseRouter } from "./routes/expenseRoutes.js";
 import { incomeRouter } from "./routes/incomeRoutes.js";
 import { userRouter } from "./routes/userRoutes.js";
+import { budgetRouter } from "./routes/budgetRoutes.js";
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/expenses", expenseRouter);
 app.use("/api/income", incomeRouter);
+app.use("/api/budget", budgetRouter);
 
 app.use((error, _req, res, _next) => {
   console.error(error);

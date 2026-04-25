@@ -25,6 +25,12 @@ const expenseSchema = new mongoose.Schema(
       trim: true,
       maxlength: 40
     },
+    customCategory: {
+      type: String,
+      trim: true,
+      maxlength: 40,
+      default: ""
+    },
     paymentMethod: {
       type: String,
       required: true,
