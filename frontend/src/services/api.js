@@ -6,10 +6,11 @@ if (!API_URL) {
 
 const request = async (path, options = {}) => {
   const token = localStorage.getItem("expense_token");
+  const isFormData = options.body instanceof FormData;
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers
     }
@@ -38,7 +39,31 @@ export const authApi = {
       body: JSON.stringify(payload)
     }),
   me: () => request("/auth/me"),
-  checkUsername: (username) => request(`/auth/check-username/${encodeURIComponent(username)}`)
+  checkUsername: (username) => request(`/auth/check-username/${encodeURIComponent(username)}`),
+  forgotPassword: (payload) =>
+    request("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  verifyResetAccount: (payload) =>
+    request("/auth/verify-reset-account", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  resetPassword: (payload) =>
+    request("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    })
+};
+
+export const userApi = {
+  profile: () => request("/user/profile"),
+  updateProfile: (payload) =>
+    request("/user/profile", {
+      method: "PUT",
+      body: payload
+    })
 };
 
 export const expenseApi = {

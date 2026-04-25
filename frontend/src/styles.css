@@ -265,6 +265,45 @@ select:focus {
   color: var(--muted);
 }
 
+.auth-message {
+  margin-top: 16px;
+}
+
+.step-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.step-row span {
+  display: grid;
+  place-items: center;
+  min-height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.step-row span.active {
+  background: var(--primary);
+  color: white;
+}
+
+.verified-panel {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.verified-panel span {
+  color: var(--muted);
+}
+
 .verified-pill {
   display: inline-flex;
   align-items: center;
@@ -295,6 +334,15 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 32px;
+  max-width: 42px;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
 
 .brand small {
@@ -350,6 +398,11 @@ select:focus {
 .avatar {
   width: 42px;
   height: 42px;
+}
+
+.image-avatar,
+.profile-photo {
+  object-fit: cover;
 }
 
 .main-panel {
@@ -515,7 +568,8 @@ th {
   margin: 0;
 }
 
-.profile-panel {
+.profile-panel,
+.profile-card {
   display: flex;
   align-items: center;
   gap: 20px;
@@ -525,6 +579,36 @@ th {
   width: 86px;
   height: 86px;
   font-size: 1.8rem;
+}
+
+.profile-avatar.large,
+.profile-photo {
+  width: 132px;
+  height: 132px;
+  border-radius: 8px;
+}
+
+.profile-photo-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.photo-button {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.profile-form {
+  width: min(420px, 100%);
+}
+
+.profile-error {
+  align-self: flex-start;
 }
 
 .profile-lines {
@@ -582,6 +666,7 @@ th {
 
   .page-title,
   .profile-panel,
+  .profile-card,
   .transaction-row {
     align-items: stretch;
     flex-direction: column;
@@ -593,5 +678,10 @@ th {
 
   .nav-actions {
     grid-template-columns: auto auto 1fr;
+  }
+
+  .brand-logo {
+    height: 28px;
+    max-width: 36px;
   }
 }

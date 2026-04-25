@@ -28,7 +28,7 @@ const Navbar = () => {
   return (
     <header className="navbar">
       <div className="brand">
-        <span className="brand-mark">E</span>
+        <img className="brand-logo" src="/images/logo.png" alt="TrackMint logo" />
         <div>
           <strong>TrackMint</strong>
           <small>Welcome, {user?.username}</small>
@@ -52,7 +52,11 @@ const Navbar = () => {
         <button className="icon-button" onClick={toggleTheme} aria-label="Toggle dark mode">
           {dark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
-        <span className="avatar">{initials}</span>
+        {user?.profileImage ? (
+          <img className="avatar image-avatar" src={user.profileImage} alt={user.username} />
+        ) : (
+          <span className="avatar">{initials}</span>
+        )}
         <button className="ghost-button" onClick={logout}>
           <LogOut size={17} />
           Logout

@@ -8,7 +8,8 @@ const publicUser = (user) => ({
   name: user.name,
   username: user.username,
   email: user.email,
-  emailVerified: user.emailVerified
+  emailVerified: user.emailVerified,
+  profileImage: user.profileImage
 });
 
 export const checkUsername = async (req, res) => {
@@ -76,4 +77,60 @@ export const login = async (req, res) => {
 
 export const me = async (req, res) => {
   res.json({ user: publicUser(req.user) });
+};
+
+export const forgotPassword = async (req, res) => {
+  const user = await User.findOne({ username: req.body.username.toLowerCase() });
+
+  if (!user) {
+    return res.status(404).json({ message: "Username not found" });
+  }
+
+  res.json({
+    message: "Username verified",
+    username: user.username,
+    emailHint: user.email.replace(/^(.{2}).*(@.*)$/, "$1***$2")
+  });
+};
+
+const verifyResetGoogleAccount = async (username, googleCredential) => {
+  const user = await User.findOne({ username: username.toLowerCase() });
+
+  if (!user) {
+    return { errorStatus: 404, errorMessage: "Username not found" };
+  }
+
+  const googleUser = await verifyGoogleCredential(googleCredential);
+
+  if (googleUser.email !== user.email) {
+    return { errorStatus: 403, errorMessage: "Google account does not match" };
+  }
+
+  return { user };
+};
+
+export const verifyResetAccount = async (req, res) => {
+  const { username, googleCredential } = req.body;
+  const result = await verifyResetGoogleAccount(username, googleCredential);
+
+  if (result.errorStatus) {
+    return res.status(result.errorStatus).json({ message: result.errorMessage });
+  }
+
+  res.json({ message: "Google account verified" });
+};
+
+export const resetPassword = async (req, res) => {
+  const { username, googleCredential, newPassword } = req.body;
+  const result = await verifyResetGoogleAccount(username, googleCredential);
+
+  if (result.errorStatus) {
+    return res.status(result.errorStatus).json({ message: result.errorMessage });
+  }
+
+  const { user } = result;
+  user.password = await bcrypt.hash(newPassword, 12);
+  await user.save();
+
+  res.json({ message: "Password reset successful" });
 };

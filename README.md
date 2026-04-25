@@ -24,16 +24,22 @@ Backend:
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `CLIENT_URL`
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
 
 Frontend:
 - `VITE_API_URL`
 - `VITE_GOOGLE_CLIENT_ID`
 - `VITE_CURRENCY`
+- `VITE_CLOUDINARY_UPLOAD_URL` optional, reserved for direct Cloudinary uploads
 
 ## Features
 
 - Google OAuth email verification during signup
 - Username/password login with JWT-protected REST APIs
+- Secure forgot-password flow with username lookup, Google account verification, and strong password reset
+- Profile management with editable name, unique username checks, and Cloudinary profile photo upload
 - Unique username checks
 - Expense and income CRUD
 - Category/date filters

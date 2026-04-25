@@ -69,6 +69,8 @@ const Login = () => {
           </button>
         </form>
         <p className="auth-switch">
+          <Link to="/forgot-password">Forgot password?</Link>
+          <br />
           New here? <Link to="/signup">Create an account</Link>
         </p>
       </section>

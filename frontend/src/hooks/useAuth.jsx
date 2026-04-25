@@ -71,9 +71,14 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback((nextUser) => {
+    localStorage.setItem("expense_user", JSON.stringify(nextUser));
+    setUser(nextUser);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, loading, signup, login, logout, isAuthenticated: Boolean(user) }),
-    [user, loading, signup, login, logout]
+    () => ({ user, loading, signup, login, logout, updateUser, isAuthenticated: Boolean(user) }),
+    [user, loading, signup, login, logout, updateUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

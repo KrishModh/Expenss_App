@@ -7,6 +7,7 @@ import { connectDB } from "./config/db.js";
 import { authRouter } from "./routes/authRoutes.js";
 import { expenseRouter } from "./routes/expenseRoutes.js";
 import { incomeRouter } from "./routes/incomeRoutes.js";
+import { userRouter } from "./routes/userRoutes.js";
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/user", userRouter);
 app.use("/api/expenses", expenseRouter);
 app.use("/api/income", incomeRouter);
 

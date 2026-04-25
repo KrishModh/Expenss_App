@@ -39,6 +39,14 @@ const userSchema = new mongoose.Schema(
     emailVerified: {
       type: Boolean,
       default: false
+    },
+    profileImage: {
+      type: String,
+      default: ""
+    },
+    profileImagePublicId: {
+      type: String,
+      default: ""
     }
   },
   { timestamps: true }
