@@ -38,8 +38,10 @@ const Login = () => {
     <main className="auth-screen">
       <section className="auth-card">
         <div className="auth-heading">
-          <span className="brand-mark">E</span>
+          <div className="l-t">
+          <span className="brand"><img className="brand-logo" src="/images/logo.png" alt="TrackMint logo" /></span>
           <h1>Welcome Back</h1>
+          </div>
           <p>Track budgets, income, and daily spending from one clean dashboard.</p>
         </div>
         <form onSubmit={handleSubmit} className="form-grid">

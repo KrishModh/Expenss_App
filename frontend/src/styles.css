@@ -99,6 +99,12 @@ a {
   margin-bottom: 24px;
 }
 
+.l-t{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .auth-heading h1,
 .page-title h1,
 .panel-heading h2 {

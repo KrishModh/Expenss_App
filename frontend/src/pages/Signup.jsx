@@ -85,8 +85,10 @@ const Signup = () => {
     <main className="auth-screen">
       <section className="auth-card signup-card">
         <div className="auth-heading">
-          <span className="brand-mark">E</span>
-          <h1>Create Account</h1>
+          <div className="l-t">
+            <span className="brand"><img className="brand-logo" src="/images/logo.png" alt="TrackMint logo" /></span>
+            <h1>Create Account</h1>
+          </div>
           <p>Google verifies your email, then your username and password secure daily login.</p>
         </div>
 
