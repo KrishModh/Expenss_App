@@ -19,6 +19,12 @@ const incomeSchema = new mongoose.Schema(
       required: true,
       min: 0.01
     },
+    paymentMethod: {
+      type: String,
+      required: true,
+      enum: ["Cash", "Online", "UPI", "Bank"],
+      default: "Online"
+    },
     date: {
       type: Date,
       required: true
@@ -28,5 +34,6 @@ const incomeSchema = new mongoose.Schema(
 );
 
 incomeSchema.index({ user: 1, date: -1 });
+incomeSchema.index({ user: 1, paymentMethod: 1 });
 
 export const Income = mongoose.model("Income", incomeSchema);

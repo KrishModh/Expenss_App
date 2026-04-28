@@ -850,3 +850,36 @@ th {
     max-width: 36px;
   }
 }
+
+.income-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.income-summary-card {
+  display: grid;
+  gap: 8px;
+  box-shadow: none;
+}
+
+.income-summary-card span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.income-summary-card strong {
+  font-size: 1.5rem;
+}
+
+.empty-table-cell {
+  text-align: center;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .income-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

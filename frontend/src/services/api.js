@@ -96,7 +96,12 @@ export const budgetApi = {
 };
 
 export const incomeApi = {
-  list: () => request("/income"),
+  list: (params = {}) => {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => Boolean(value))
+    ).toString();
+    return request(`/income${query ? `?${query}` : ""}`);
+  },
   create: (payload) =>
     request("/income", {
       method: "POST",

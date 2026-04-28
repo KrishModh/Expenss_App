@@ -1,8 +1,55 @@
 import { Income } from "../models/Income.js";
 
+const buildIncomeFilters = (query, userId) => {
+  const filters = { user: userId };
+
+  if (query.paymentMethod) {
+    filters.paymentMethod = query.paymentMethod;
+  }
+
+  if (query.startDate || query.endDate) {
+    filters.date = {};
+    if (query.startDate) filters.date.$gte = new Date(query.startDate);
+    if (query.endDate) filters.date.$lte = new Date(query.endDate);
+  }
+
+  return filters;
+};
+
+const summarizeIncomes = (incomes) =>
+  incomes.reduce(
+    (acc, income) => {
+      const amount = Number(income.amount) || 0;
+      const method = income.paymentMethod || "Online";
+
+      acc.totalIncome += amount;
+
+      if (method === "Cash") {
+        acc.byPaymentMethod.cash += amount;
+      } else {
+        acc.byPaymentMethod.online += amount;
+      }
+
+      return acc;
+    },
+    {
+      totalIncome: 0,
+      byPaymentMethod: {
+        cash: 0,
+        online: 0
+      }
+    }
+  );
+
 export const getIncomes = async (req, res) => {
-  const incomes = await Income.find({ user: req.user._id }).sort({ date: -1 });
-  res.json({ incomes });
+  const incomes = await Income.find(buildIncomeFilters(req.query, req.user._id)).sort({ date: -1 });
+  const summary = summarizeIncomes(incomes);
+
+  res.json({
+    incomes,
+    filteredTransactions: incomes,
+    ...summary
+  });
 };
 
 export const createIncome = async (req, res) => {
