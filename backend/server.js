@@ -29,6 +29,7 @@ app.use(
   })
 );
 
+// fix
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
