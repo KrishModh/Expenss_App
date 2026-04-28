@@ -18,7 +18,7 @@
 </div>
 
 ---
-<!-- fixing -->
+
 ## 📸 Screenshots
 
 | Dashboard | Expenses |
