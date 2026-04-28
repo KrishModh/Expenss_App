@@ -1,3 +1,4 @@
+import "../styles/transaction-list.css";
 import { formatCurrency } from "../utils/currency.js";
 
 const formatDate = (value) =>
@@ -25,3 +26,4 @@ const TransactionList = ({ items }) => (
 );
 
 export default TransactionList;
+

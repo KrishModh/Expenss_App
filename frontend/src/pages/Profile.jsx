@@ -1,3 +1,4 @@
+import "../styles/profile.css";
 import { Camera, CheckCircle2, Mail, Pencil, Save, ShieldCheck, User } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../hooks/useAuth.jsx";
@@ -183,3 +184,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

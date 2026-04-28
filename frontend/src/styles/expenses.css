@@ -1,0 +1,99 @@
+.expense-summary-grid {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.expense-total-card,
+.payment-card {
+  box-shadow: none;
+}
+
+.expense-total-card {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+}
+
+.expense-total-card span,
+.payment-card span,
+.payment-card small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.expense-total-card strong {
+  font-size: 1.75rem;
+}
+
+.payment-card {
+  display: grid;
+  gap: 10px;
+}
+
+.payment-card-top {
+  display: grid;
+  gap: 6px;
+}
+
+.payment-card-top strong {
+  font-size: 1.1rem;
+}
+
+.payment-progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--line);
+}
+
+.payment-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+
+.budget-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.budget-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.budget-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.budget-metrics div {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.budget-metrics span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.budget-metrics strong {
+  font-size: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .expense-summary-grid,
+  .budget-form,
+  .budget-metrics {
+    grid-template-columns: 1fr;
+  }
+}

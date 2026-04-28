@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import "./styles/shared.css";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import { BudgetProvider } from "./hooks/useBudget.jsx";
 import Navbar from "./components/Navbar.jsx";
@@ -104,3 +105,5 @@ function App() {
 }
 
 export default App;
+
+

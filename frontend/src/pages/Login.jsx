@@ -1,3 +1,4 @@
+import "../styles/auth.css";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -81,3 +82,4 @@ const Login = () => {
 };
 
 export default Login;
+

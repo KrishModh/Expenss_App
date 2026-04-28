@@ -1,0 +1,32 @@
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  min-height: 112px;
+  padding: 20px;
+}
+
+.metric-card span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.metric-card strong {
+  font-size: 1.8rem;
+}
+
+.metric-card.success strong {
+  color: var(--success);
+}
+
+.metric-card.danger strong {
+  color: var(--danger);
+}
+
+.metric-card.accent strong {
+  color: var(--accent);
+}

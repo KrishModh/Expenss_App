@@ -1,0 +1,29 @@
+.list-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.transaction-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.transaction-row span,
+.transaction-row small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .transaction-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

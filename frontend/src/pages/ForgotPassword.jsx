@@ -1,3 +1,4 @@
+import "../styles/auth.css";
 import { GoogleLogin } from "@react-oauth/google";
 import { CheckCircle2, KeyRound, Search } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
@@ -163,3 +164,4 @@ const ForgotPassword = () => {
 };
 
 export default ForgotPassword;
+

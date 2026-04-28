@@ -1,0 +1,69 @@
+.profile-panel,
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.profile-avatar {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #14b8a6;
+  color: white;
+  font-weight: 900;
+  width: 86px;
+  height: 86px;
+  font-size: 1.8rem;
+}
+
+.profile-avatar.large,
+.profile-photo {
+  width: 132px;
+  height: 132px;
+  border-radius: 8px;
+}
+
+.profile-photo {
+  object-fit: cover;
+}
+
+.profile-photo-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.photo-button {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+}
+
+.profile-form {
+  width: min(420px, 100%);
+}
+
+.profile-error {
+  align-self: flex-start;
+}
+
+.profile-lines {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-lines span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .profile-panel,
+  .profile-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

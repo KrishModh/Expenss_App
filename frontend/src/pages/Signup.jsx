@@ -1,3 +1,4 @@
+import "../styles/auth.css";
 import { GoogleLogin } from "@react-oauth/google";
 import { CheckCircle2, KeyRound, UserPlus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -148,3 +149,4 @@ const Signup = () => {
 };
 
 export default Signup;
+

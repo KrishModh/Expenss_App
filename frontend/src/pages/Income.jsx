@@ -1,3 +1,4 @@
+import "../styles/income.css";
 import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { incomeApi } from "../services/api.js";
@@ -260,3 +261,4 @@ const Income = () => {
 };
 
 export default Income;
+

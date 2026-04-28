@@ -1,3 +1,4 @@
+import "../styles/expenses.css";
 import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBudget } from "../hooks/useBudget.jsx";
@@ -332,7 +333,7 @@ const Expenses = () => {
 
         <article className="panel">
           <div className="panel-heading">
-            <h2>Filters</h2>
+            <h2>Expenses history</h2>
           </div>
           <div className="filter-grid">
             <label>
@@ -389,3 +390,4 @@ const Expenses = () => {
 };
 
 export default Expenses;
+

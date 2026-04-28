@@ -1,3 +1,4 @@
+import "../styles/metric-card.css";
 const MetricCard = ({ label, value, tone }) => (
   <article className={`metric-card ${tone || ""}`}>
     <span>{label}</span>
@@ -6,3 +7,4 @@ const MetricCard = ({ label, value, tone }) => (
 );
 
 export default MetricCard;
+

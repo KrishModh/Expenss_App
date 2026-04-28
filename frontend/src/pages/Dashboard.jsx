@@ -1,3 +1,4 @@
+import "../styles/dashboard.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -170,3 +171,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

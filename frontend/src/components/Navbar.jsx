@@ -1,3 +1,4 @@
+import "../styles/navbar.css";
 import { BarChart3, LogOut, Menu, Moon, Sun, User, WalletCards, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
@@ -67,3 +68,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
