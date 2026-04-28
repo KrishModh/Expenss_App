@@ -18,16 +18,16 @@
 </div>
 
 ---
-
+<!-- fixing -->
 ## 📸 Screenshots
 
 | Dashboard | Expenses |
 |-----------|----------|
-| ![Dashboard](./screenshots/dashboard.png) | ![Expenses](./screenshots/expenses.png) |
+|<img width="2560" height="1440" alt="Dashboard" src="https://github.com/user-attachments/assets/fed6aa11-5865-48d9-a0c9-56e280c544ba" /> | <img width="2560" height="1440" alt="Expenses" src="https://github.com/user-attachments/assets/f5370765-5e57-42eb-8229-7aae1c80c56f" /> |
 
 | Income | Profile |
 |--------|---------|
-| ![Income](./screenshots/income.png) | ![Profile](./screenshots/profile.png) |
+| <img width="2560" height="1440" alt="Income" src="https://github.com/user-attachments/assets/b7388caf-9312-472d-ab65-74363a010db8" /> | <img width="2560" height="1440" alt="Profile" src="https://github.com/user-attachments/assets/27d384c7-f3a1-46a9-a996-f05987d54dad" /> |
 
 ---
 
