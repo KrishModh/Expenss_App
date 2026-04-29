@@ -1,6 +1,7 @@
 import { OAuth2Client } from "google-auth-library";
 import { env } from "../config/env.js";
 
+// goggle signup system
 const client = new OAuth2Client(env.googleClientId);
 
 export const verifyGoogleCredential = async (credential) => {
