@@ -3,6 +3,18 @@ import { Expense } from "../models/Expense.js";
 const paymentMethods = ["Cash", "Card", "UPI", "Online"];
 const defaultCategories = ["Food", "Travel", "Shopping", "Bills", "Health", "Education", "Other"];
 
+const getCurrentMonthRange = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const monthIndex = now.getMonth();
+
+  return {
+    month: `${year}-${String(monthIndex + 1).padStart(2, "0")}`,
+    startDate: new Date(year, monthIndex, 1),
+    endDate: new Date(year, monthIndex + 1, 1)
+  };
+};
+
 const buildExpenseFilters = (query, userId) => {
   const filters = { user: userId };
 
@@ -56,17 +68,40 @@ const normalizeExpensePayload = (payload) => {
 
 export const getExpenses = async (req, res) => {
   const filters = buildExpenseFilters(req.query, req.user._id);
-  const [expenses, paymentTotals] = await Promise.all([
+  const { month, startDate, endDate } = getCurrentMonthRange();
+  const currentMonthFilters = {
+    user: req.user._id,
+    date: {
+      $gte: startDate,
+      $lt: endDate
+    }
+  };
+  const [expenses, paymentTotals, currentMonthPaymentTotals] = await Promise.all([
     Expense.find(filters).sort({ date: -1 }),
     Expense.aggregate([
       { $match: filters },
       { $group: { _id: "$paymentMethod", total: { $sum: "$amount" } } }
+    ]),
+    Expense.aggregate([
+      { $match: currentMonthFilters },
+      { $group: { _id: "$paymentMethod", total: { $sum: "$amount" } } }
     ])
   ]);
+  const overallSummary = summarizePaymentAggregation(paymentTotals);
+  const currentMonthSummary = summarizePaymentAggregation(currentMonthPaymentTotals);
 
   res.json({
     expenses,
-    summary: summarizePaymentAggregation(paymentTotals)
+    summary: overallSummary,
+    overallSummary,
+    currentMonthSummary: {
+      total: currentMonthSummary.totalExpense,
+      cash: Number(currentMonthSummary.byPaymentMethod.cash || 0),
+      card: Number(currentMonthSummary.byPaymentMethod.card || 0),
+      upi: Number(currentMonthSummary.byPaymentMethod.upi || 0),
+      online: Number(currentMonthSummary.byPaymentMethod.online || 0),
+      month
+    }
   });
 };
 

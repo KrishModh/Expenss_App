@@ -9,6 +9,8 @@ import { currencySymbol, formatCurrency, normalizeAmountInput } from "../utils/c
 const categories = ["Food", "Travel", "Shopping", "Bills", "Health", "Education", "Other"];
 const methods = ["Cash", "Card", "UPI", "Online"];
 const blankExpense = { title: "", amount: "", category: "Food", customCategory: "", paymentMethod: "Cash", date: "" };
+const currentMonthSummaryDefaults = { total: 0, cash: 0, card: 0, upi: 0, online: 0, month: "" };
+const defaultFilters = { category: "", startDate: "", endDate: "" };
 
 const Expenses = () => {
   const titleRef = useRef(null);
@@ -25,19 +27,29 @@ const Expenses = () => {
   } = useBudget();
   const [expenses, setExpenses] = useState([]);
   const [summary, setSummary] = useState({ totalExpense: 0, byPaymentMethod: {} });
+  const [currentMonthSummary, setCurrentMonthSummary] = useState(currentMonthSummaryDefaults);
   const [budgetInput, setBudgetInput] = useState("");
   const [budgetMessage, setBudgetMessage] = useState("");
   const [budgetError, setBudgetError] = useState("");
   const [form, setForm] = useState(blankExpense);
   const [editingId, setEditingId] = useState("");
-  const [filters, setFilters] = useState({ category: "", startDate: "", endDate: "" });
+  const [filters, setFilters] = useState(defaultFilters);
   const [error, setError] = useState("");
 
   const loadExpenses = useCallback(async () => {
     try {
+      setError("");
       const data = await expenseApi.list(filters);
       setExpenses(data.expenses);
-      setSummary(data.summary || { totalExpense: 0, byPaymentMethod: {} });
+      setSummary(data.overallSummary || data.summary || { totalExpense: 0, byPaymentMethod: {} });
+      setCurrentMonthSummary({
+        total: Number(data.currentMonthSummary?.total || 0),
+        cash: Number(data.currentMonthSummary?.cash || 0),
+        card: Number(data.currentMonthSummary?.card || 0),
+        upi: Number(data.currentMonthSummary?.upi || 0),
+        online: Number(data.currentMonthSummary?.online || 0),
+        month: data.currentMonthSummary?.month || ""
+      });
     } catch (err) {
       setError(err.message);
     }
@@ -63,6 +75,10 @@ const Expenses = () => {
 
   const updateFilter = useCallback((event) => {
     setFilters((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setFilters(defaultFilters);
   }, []);
 
   const updateBudgetInput = useCallback((event) => {
@@ -162,6 +178,17 @@ const Expenses = () => {
     [summary.byPaymentMethod, total]
   );
 
+  const currentMonthCards = useMemo(
+    () => [
+      { label: "Total Spent", amount: currentMonthSummary.total, percentage: 100 },
+      { label: "Cash", amount: currentMonthSummary.cash, percentage: currentMonthSummary.total > 0 ? (currentMonthSummary.cash / currentMonthSummary.total) * 100 : 0 },
+      { label: "Card", amount: currentMonthSummary.card, percentage: currentMonthSummary.total > 0 ? (currentMonthSummary.card / currentMonthSummary.total) * 100 : 0 },
+      { label: "UPI", amount: currentMonthSummary.upi, percentage: currentMonthSummary.total > 0 ? (currentMonthSummary.upi / currentMonthSummary.total) * 100 : 0 },
+      { label: "Online", amount: currentMonthSummary.online, percentage: currentMonthSummary.total > 0 ? (currentMonthSummary.online / currentMonthSummary.total) * 100 : 0 }
+    ],
+    [currentMonthSummary]
+  );
+
   const budgetStats = useMemo(() => {
     const usedPercent = budgetAmount > 0 ? Math.min((currentMonthExpenses / budgetAmount) * 100, 100) : 0;
     const progressTone = usedPercent > 90 ? "danger" : usedPercent >= 70 ? "warning" : "success";
@@ -175,6 +202,8 @@ const Expenses = () => {
   }, [budgetAmount, currentMonthExpenses, remainingBalance]);
 
   const monthLabel = useMemo(() => formatMonthLabel(month), [month]);
+  const expenseMonthLabel = useMemo(() => formatMonthLabel(currentMonthSummary.month), [currentMonthSummary.month]);
+  const hasActiveFilters = useMemo(() => Object.values(filters).some(Boolean), [filters]);
 
   const exportCsv = useCallback(() => {
     const header = ["Title", "Amount", "Category", "Payment Method", "Date"];
@@ -226,6 +255,38 @@ const Expenses = () => {
             <small>{item.percentage.toFixed(1)}%</small>
           </article>
         ))}
+      </section>
+
+      <section className="page-stack current-month-expense-section">
+        <div className="section-heading">
+          <div>
+            {/* <p>Current Month Expense Summary</p> */}
+            <h2>{expenseMonthLabel ? `${expenseMonthLabel} Summary` : "Auto synced for current month"}</h2>
+          </div>
+        </div>
+        <div className="expense-summary-grid">
+          {currentMonthCards.map((item, index) => (
+            <article className={`panel ${index === 0 ? "expense-total-card" : "payment-card"}`} key={item.label}>
+              {index === 0 ? (
+                <>
+                  <span>{item.label}</span>
+                  <strong>{formatCurrency(item.amount)}</strong>
+                </>
+              ) : (
+                <>
+                  <div className="payment-card-top">
+                    <span>{item.label}</span>
+                    <strong>{formatCurrency(item.amount)}</strong>
+                  </div>
+                  <div className="payment-progress" aria-label={`${item.label} ${item.percentage.toFixed(0)} percent`}>
+                    <span style={{ width: `${item.percentage}%` }} />
+                  </div>
+                  <small>{item.percentage.toFixed(1)}%</small>
+                </>
+              )}
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="panel budget-panel">
@@ -349,22 +410,29 @@ const Expenses = () => {
           <div className="panel-heading">
             <h2>Expenses history</h2>
           </div>
-          <div className="filter-grid">
-            <label>
-              Category
-              <select name="category" value={filters.category} onChange={updateFilter}>
-                <option value="">All</option>
-                {categories.map((category) => <option key={category}>{category}</option>)}
-              </select>
-            </label>
-            <label>
-              From
-              <input name="startDate" type="date" value={filters.startDate} onChange={updateFilter} />
-            </label>
-            <label>
-              To
-              <input name="endDate" type="date" value={filters.endDate} onChange={updateFilter} />
-            </label>
+          <div className="filter-toolbar">
+            <div className="filter-grid">
+              <label>
+                Category
+                <select name="category" value={filters.category} onChange={updateFilter}>
+                  <option value="">All</option>
+                  {categories.map((category) => <option key={category}>{category}</option>)}
+                </select>
+              </label>
+              <label>
+                From
+                <input name="startDate" type="date" value={filters.startDate} onChange={updateFilter} />
+              </label>
+              <label>
+                To
+                <input name="endDate" type="date" value={filters.endDate} onChange={updateFilter} />
+              </label>
+            </div>
+            <div className="filter-actions">
+              <button type="button" className="ghost-button" onClick={clearFilters} disabled={!hasActiveFilters}>
+                Clear Filters
+              </button>
+            </div>
           </div>
           <div className="table-wrap transaction-table-wrap">
             <table>

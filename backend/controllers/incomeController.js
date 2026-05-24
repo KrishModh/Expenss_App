@@ -1,5 +1,16 @@
 import { Income } from "../models/Income.js";
 
+const getCurrentMonthRange = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  return {
+    month: `${year}-${String(month + 1).padStart(2, "0")}`,
+    startDate: new Date(year, month, 1),
+    endDate: new Date(year, month + 1, 1)
+  };
+};
+
 const buildIncomeFilters = (query, userId) => {
   const filters = { user: userId };
 
@@ -16,7 +27,7 @@ const buildIncomeFilters = (query, userId) => {
   return filters;
 };
 
-const summarizeIncomes = (incomes) =>
+const summarizeIncomes = (incomes, month = "") =>
   incomes.reduce(
     (acc, income) => {
       const amount = Number(income.amount) || 0;
@@ -34,6 +45,7 @@ const summarizeIncomes = (incomes) =>
     },
     {
       totalIncome: 0,
+      month,
       byPaymentMethod: {
         cash: 0,
         online: 0
@@ -42,13 +54,38 @@ const summarizeIncomes = (incomes) =>
   );
 
 export const getIncomes = async (req, res) => {
-  const incomes = await Income.find(buildIncomeFilters(req.query, req.user._id)).sort({ date: -1 });
-  const summary = summarizeIncomes(incomes);
+  const filteredFilters = buildIncomeFilters(req.query, req.user._id);
+  const { month, startDate, endDate } = getCurrentMonthRange();
+  const currentMonthFilters = {
+    user: req.user._id,
+    date: {
+      $gte: startDate,
+      $lt: endDate
+    }
+  };
+  const [filteredTransactions, currentMonthTransactions] = await Promise.all([
+    Income.find(filteredFilters).sort({ date: -1 }),
+    Income.find(currentMonthFilters)
+  ]);
+  const filteredSummary = summarizeIncomes(filteredTransactions);
+  const currentMonthSummary = summarizeIncomes(currentMonthTransactions, month);
 
   res.json({
-    incomes,
-    filteredTransactions: incomes,
-    ...summary
+    incomes: filteredTransactions,
+    filteredTransactions,
+    filteredSummary: {
+      totalIncome: filteredSummary.totalIncome,
+      cashIncome: filteredSummary.byPaymentMethod.cash,
+      onlineIncome: filteredSummary.byPaymentMethod.online
+    },
+    currentMonthSummary: {
+      totalIncome: currentMonthSummary.totalIncome,
+      cashIncome: currentMonthSummary.byPaymentMethod.cash,
+      onlineIncome: currentMonthSummary.byPaymentMethod.online,
+      month: currentMonthSummary.month
+    },
+    totalIncome: filteredSummary.totalIncome,
+    byPaymentMethod: filteredSummary.byPaymentMethod
   });
 };
 

@@ -4,10 +4,43 @@
   gap: 14px;
 }
 
+.income-section-block {
+  gap: 14px;
+}
+
 .income-summary-card {
   display: grid;
   gap: 8px;
-  box-shadow: none;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.current-month-card {
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+.income-summary-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--line));
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+}
+
+:root[data-theme="dark"] .current-month-card {
+  background:
+    linear-gradient(180deg, rgba(56, 189, 248, 0.04), rgba(56, 189, 248, 0)),
+    rgba(21, 31, 48, 0.88);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+:root[data-theme="dark"] .income-summary-card:hover {
+  border-color: rgba(56, 189, 248, 0.32);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(56, 189, 248, 0.08);
 }
 
 .income-summary-card span {
@@ -19,8 +52,41 @@
   font-size: 1.5rem;
 }
 
+.filter-toolbar {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.filter-toolbar .filter-grid {
+  flex: 1 1 auto;
+  margin-bottom: 0;
+}
+
+.filter-toolbar .filter-actions {
+  margin-bottom: 0;
+  flex: 0 0 auto;
+}
+
+.filter-toolbar .ghost-button {
+  min-width: 132px;
+}
+
 @media (max-width: 900px) {
   .income-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .filter-toolbar {
+    display: grid;
+  }
+
+  .filter-toolbar .filter-actions {
+    justify-content: stretch;
+  }
+
+  .filter-toolbar .ghost-button {
+    width: 100%;
   }
 }

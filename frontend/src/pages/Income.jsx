@@ -3,9 +3,11 @@ import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { incomeApi } from "../services/api.js";
 import { currencySymbol, formatCurrency, normalizeAmountInput } from "../utils/currency.js";
+import { formatMonthLabel } from "../utils/month.js";
 
 const paymentMethods = ["Cash", "Online", "UPI", "Bank"];
 const blankIncome = { source: "", amount: "", paymentMethod: "Online", date: "" };
+const defaultFilters = { startDate: "", endDate: "", paymentMethod: "" };
 
 const reportFileName = () => {
   const date = new Date();
@@ -16,22 +18,33 @@ const reportFileName = () => {
 const Income = () => {
   const sourceRef = useRef(null);
   const [incomes, setIncomes] = useState([]);
-  const [summary, setSummary] = useState({ totalIncome: 0, byPaymentMethod: { cash: 0, online: 0 } });
-  const [filters, setFilters] = useState({ startDate: "", endDate: "", paymentMethod: "" });
+  const [filteredSummary, setFilteredSummary] = useState({ totalIncome: 0, cashIncome: 0, onlineIncome: 0 });
+  const [currentMonthSummary, setCurrentMonthSummary] = useState({
+    totalIncome: 0,
+    cashIncome: 0,
+    onlineIncome: 0,
+    month: ""
+  });
+  const [filters, setFilters] = useState(defaultFilters);
   const [form, setForm] = useState(blankIncome);
   const [editingId, setEditingId] = useState("");
   const [error, setError] = useState("");
 
   const loadIncomes = useCallback(async () => {
     try {
+      setError("");
       const data = await incomeApi.list(filters);
       setIncomes(data.filteredTransactions || data.incomes || []);
-      setSummary({
-        totalIncome: Number(data.totalIncome || 0),
-        byPaymentMethod: {
-          cash: Number(data.byPaymentMethod?.cash || 0),
-          online: Number(data.byPaymentMethod?.online || 0)
-        }
+      setFilteredSummary({
+        totalIncome: Number(data.filteredSummary?.totalIncome || data.totalIncome || 0),
+        cashIncome: Number(data.filteredSummary?.cashIncome || data.byPaymentMethod?.cash || 0),
+        onlineIncome: Number(data.filteredSummary?.onlineIncome || data.byPaymentMethod?.online || 0)
+      });
+      setCurrentMonthSummary({
+        totalIncome: Number(data.currentMonthSummary?.totalIncome || 0),
+        cashIncome: Number(data.currentMonthSummary?.cashIncome || 0),
+        onlineIncome: Number(data.currentMonthSummary?.onlineIncome || 0),
+        month: data.currentMonthSummary?.month || ""
       });
     } catch (err) {
       setError(err.message);
@@ -50,6 +63,10 @@ const Income = () => {
 
   const updateFilter = useCallback((event) => {
     setFilters((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setFilters(defaultFilters);
   }, []);
 
   const resetForm = useCallback(() => {
@@ -91,24 +108,33 @@ const Income = () => {
   const deleteIncome = useCallback(
     async (id) => {
       await incomeApi.remove(id);
-      loadIncomes();
+      await loadIncomes();
     },
     [loadIncomes]
   );
 
-  const total = useMemo(
-    () => summary.totalIncome || incomes.reduce((sum, item) => sum + Number(item.amount), 0),
-    [incomes, summary.totalIncome]
-  );
+  const total = useMemo(() => filteredSummary.totalIncome, [filteredSummary.totalIncome]);
 
-  const incomeSummary = useMemo(
+  const overallSummaryCards = useMemo(
     () => [
       { label: "Total Income", value: total },
-      { label: "Cash Income", value: summary.byPaymentMethod.cash },
-      { label: "Online Income", value: summary.byPaymentMethod.online }
+      { label: "Cash Income", value: filteredSummary.cashIncome },
+      { label: "Online Income", value: filteredSummary.onlineIncome }
     ],
-    [summary.byPaymentMethod.cash, summary.byPaymentMethod.online, total]
+    [filteredSummary.cashIncome, filteredSummary.onlineIncome, total]
   );
+
+  const currentMonthCards = useMemo(
+    () => [
+      { label: "Total Income", value: currentMonthSummary.totalIncome },
+      { label: "Cash Income", value: currentMonthSummary.cashIncome },
+      { label: "Online Income", value: currentMonthSummary.onlineIncome }
+    ],
+    [currentMonthSummary.cashIncome, currentMonthSummary.onlineIncome, currentMonthSummary.totalIncome]
+  );
+
+  const currentMonthLabel = useMemo(() => formatMonthLabel(currentMonthSummary.month), [currentMonthSummary.month]);
+  const hasActiveFilters = useMemo(() => Object.values(filters).some(Boolean), [filters]);
 
   const exportCsv = useCallback(() => {
     const header = ["Title", "Amount", "Payment Method", "Date"];
@@ -142,13 +168,38 @@ const Income = () => {
         </button>
       </div>
 
-      <section className="income-summary-grid">
-        {incomeSummary.map((item) => (
-          <article className="panel income-summary-card" key={item.label}>
-            <span>{item.label}</span>
-            <strong>{formatCurrency(item.value)}</strong>
-          </article>
-        ))}
+      <section className="page-stack income-section-block">
+        <div className="section-heading">
+          <div>
+            <p>Overall Summary</p>
+            <h2>Income statistics based on current filters</h2>
+          </div>
+        </div>
+        <div className="income-summary-grid">
+          {overallSummaryCards.map((item) => (
+            <article className="panel income-summary-card" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{formatCurrency(item.value)}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="page-stack income-section-block">
+        <div className="section-heading">
+          <div>
+            {/* <p>Current Month Summary</p> */}
+            <h2>{currentMonthLabel ? `${currentMonthLabel} Summary` : "Auto synced to current month"}</h2>
+          </div>
+        </div>
+        <div className="income-summary-grid">
+          {currentMonthCards.map((item) => (
+            <article className="panel income-summary-card current-month-card" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{formatCurrency(item.value)}</strong>
+            </article>
+          ))}
+        </div>
       </section>
 
       <div className="management-grid">
@@ -200,22 +251,29 @@ const Income = () => {
           <div className="panel-heading">
             <h2>Income History</h2>
           </div>
-          <div className="filter-grid">
-            <label>
-              From
-              <input name="startDate" type="date" value={filters.startDate} onChange={updateFilter} />
-            </label>
-            <label>
-              To
-              <input name="endDate" type="date" value={filters.endDate} onChange={updateFilter} />
-            </label>
-            <label>
-              Payment Method
-              <select name="paymentMethod" value={filters.paymentMethod} onChange={updateFilter}>
-                <option value="">All</option>
-                {paymentMethods.map((method) => <option key={method}>{method}</option>)}
-              </select>
-            </label>
+          <div className="filter-toolbar">
+            <div className="filter-grid">
+              <label>
+                Payment Method
+                <select name="paymentMethod" value={filters.paymentMethod} onChange={updateFilter}>
+                  <option value="">All</option>
+                  {paymentMethods.map((method) => <option key={method}>{method}</option>)}
+                </select>
+              </label>
+              <label>
+                From
+                <input name="startDate" type="date" value={filters.startDate} onChange={updateFilter} />
+              </label>
+              <label>
+                To
+                <input name="endDate" type="date" value={filters.endDate} onChange={updateFilter} />
+              </label>
+            </div>
+            <div className="filter-actions">
+              <button type="button" className="ghost-button" onClick={clearFilters} disabled={!hasActiveFilters}>
+                Clear Filters
+              </button>
+            </div>
           </div>
           <div className="table-wrap transaction-table-wrap">
             <table>
@@ -261,4 +319,3 @@ const Income = () => {
 };
 
 export default Income;
-
