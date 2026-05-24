@@ -18,6 +18,7 @@ incomeRouter.use(asyncHandler(requireAuth));
 
 incomeRouter.get(
   "/",
+  query("search").optional().trim().isLength({ max: 120 }),
   query("startDate").optional().isISO8601(),
   query("endDate").optional().isISO8601(),
   query("paymentMethod").optional().isIn(["Cash", "Online", "UPI", "Bank"]),

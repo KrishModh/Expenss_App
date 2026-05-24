@@ -8,9 +8,9 @@ import { currencySymbol, formatCurrency, normalizeAmountInput } from "../utils/c
 
 const categories = ["Food", "Travel", "Shopping", "Bills", "Health", "Education", "Other"];
 const methods = ["Cash", "Card", "UPI", "Online"];
-const blankExpense = { title: "", amount: "", category: "Food", customCategory: "", paymentMethod: "Cash", date: "" };
+const blankExpense = { title: "", location: "", amount: "", category: "Food", customCategory: "", paymentMethod: "Cash", date: "" };
 const currentMonthSummaryDefaults = { total: 0, cash: 0, card: 0, upi: 0, online: 0, month: "" };
-const defaultFilters = { category: "", startDate: "", endDate: "" };
+const defaultFilters = { search: "", category: "", startDate: "", endDate: "", paymentMethod: "" };
 
 const Expenses = () => {
   const titleRef = useRef(null);
@@ -145,6 +145,7 @@ const Expenses = () => {
     setEditingId(expense._id);
     setForm({
       title: expense.title,
+      location: expense.location || "",
       amount: expense.amount,
       category: isKnownCategory ? expense.category : "Other",
       customCategory: isKnownCategory ? "" : expense.customCategory || expense.category,
@@ -206,12 +207,13 @@ const Expenses = () => {
   const hasActiveFilters = useMemo(() => Object.values(filters).some(Boolean), [filters]);
 
   const exportCsv = useCallback(() => {
-    const header = ["Title", "Amount", "Category", "Payment Method", "Date"];
+    const header = ["Title", "Amount", "Category", "Payment Method", "Location", "Date"];
     const rows = expenses.map((item) => [
       item.title,
       item.amount,
       item.category,
       item.paymentMethod,
+      item.location || "",
       new Date(item.date).toISOString().slice(0, 10)
     ]);
     const csv = [header, ...rows]
@@ -226,7 +228,7 @@ const Expenses = () => {
   }, [expenses]);
 
   return (
-    <section className="page-stack">
+    <section className="page-stack expenses-page">
       <div className="page-title">
         <div>
           <p>Expenses</p>
@@ -352,6 +354,16 @@ const Expenses = () => {
             <input ref={titleRef} autoFocus name="title" value={form.title} onChange={updateForm} required />
           </label>
           <label>
+            Location
+            <input
+              name="location"
+              value={form.location}
+              onChange={updateForm}
+              maxLength={120}
+              placeholder="Ahmedabad, Starbucks, Online Store"
+            />
+          </label>
+          <label>
             Amount
             <div className="currency-input">
               <span>{currencySymbol}</span>
@@ -411,12 +423,35 @@ const Expenses = () => {
             <h2>Expenses history</h2>
           </div>
           <div className="filter-toolbar">
+            <div className="search-toolbar">
+              <label className="search-field">
+                Search expenses
+                <input
+                  name="search"
+                  value={filters.search}
+                  onChange={updateFilter}
+                  placeholder="Search by title, category, location, or payment method"
+                />
+              </label>
+              <div className="filter-actions">
+                <button type="button" className="ghost-button" onClick={clearFilters} disabled={!hasActiveFilters}>
+                  Clear All
+                </button>
+              </div>
+            </div>
             <div className="filter-grid">
               <label>
                 Category
                 <select name="category" value={filters.category} onChange={updateFilter}>
                   <option value="">All</option>
                   {categories.map((category) => <option key={category}>{category}</option>)}
+                </select>
+              </label>
+              <label>
+                Payment Method
+                <select name="paymentMethod" value={filters.paymentMethod} onChange={updateFilter}>
+                  <option value="">All</option>
+                  {methods.map((method) => <option key={method}>{method}</option>)}
                 </select>
               </label>
               <label>
@@ -428,11 +463,6 @@ const Expenses = () => {
                 <input name="endDate" type="date" value={filters.endDate} onChange={updateFilter} />
               </label>
             </div>
-            <div className="filter-actions">
-              <button type="button" className="ghost-button" onClick={clearFilters} disabled={!hasActiveFilters}>
-                Clear Filters
-              </button>
-            </div>
           </div>
           <div className="table-wrap transaction-table-wrap">
             <table>
@@ -441,6 +471,8 @@ const Expenses = () => {
                   <th>Title</th>
                   <th>Amount</th>
                   <th>Category</th>
+                  <th>Payment Method</th>
+                  <th>Location</th>
                   <th>Date</th>
                   <th>Actions</th>
                 </tr>
@@ -451,6 +483,8 @@ const Expenses = () => {
                     <td>{expense.title}</td>
                     <td>{formatCurrency(expense.amount)}</td>
                     <td>{expense.category}</td>
+                    <td>{expense.paymentMethod}</td>
+                    <td>{expense.location || "-"}</td>
                     <td>{new Date(expense.date).toLocaleDateString()}</td>
                     <td className="table-actions">
                       <button className="icon-button" onClick={() => editExpense(expense)} aria-label="Edit expense">

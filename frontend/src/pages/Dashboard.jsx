@@ -133,7 +133,7 @@ const Dashboard = () => {
       <div className="metric-grid">
         <MetricCard label={monthLabel ? `Budget • ${monthLabel}` : "Monthly Budget"} value={formatCurrency(summary.totalBudget)} />
         <MetricCard label={monthLabel ? `Spent • ${monthLabel}` : "Total Expenses"} value={formatCurrency(summary.totalExpenses)} tone="danger" />
-        <MetricCard label="Total Income" value={formatCurrency(summary.totalIncome)} tone="success" />
+        <MetricCard label={monthLabel ? `Income • ${monthLabel}` : "Total Income"} value={formatCurrency(summary.totalIncome)} tone="success" />
         <MetricCard label={monthLabel ? `Remaining • ${monthLabel}` : "Remaining Balance"} value={formatCurrency(summary.remaining)} tone="accent" />
       </div>
 

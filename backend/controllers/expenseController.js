@@ -2,6 +2,7 @@ import { Expense } from "../models/Expense.js";
 
 const paymentMethods = ["Cash", "Card", "UPI", "Online"];
 const defaultCategories = ["Food", "Travel", "Shopping", "Bills", "Health", "Education", "Other"];
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const getCurrentMonthRange = () => {
   const now = new Date();
@@ -18,11 +19,25 @@ const getCurrentMonthRange = () => {
 const buildExpenseFilters = (query, userId) => {
   const filters = { user: userId };
 
+  if (query.search?.trim()) {
+    const searchPattern = new RegExp(escapeRegex(query.search.trim()), "i");
+    filters.$or = [
+      { title: searchPattern },
+      { category: searchPattern },
+      { location: searchPattern },
+      { paymentMethod: searchPattern }
+    ];
+  }
+
   if (query.category) {
     filters.category =
       query.category === "Other"
         ? { $nin: defaultCategories.filter((category) => category !== "Other") }
         : query.category;
+  }
+
+  if (query.paymentMethod) {
+    filters.paymentMethod = query.paymentMethod;
   }
 
   if (query.startDate || query.endDate) {
@@ -51,10 +66,12 @@ const summarizePaymentAggregation = (paymentTotals) => {
 
 const normalizeExpensePayload = (payload) => {
   const customCategory = payload.customCategory?.trim() || "";
+  const location = payload.location?.trim() || "";
 
   if (payload.category === "Other") {
     return {
       ...payload,
+      location,
       category: customCategory,
       customCategory
     };
@@ -62,6 +79,7 @@ const normalizeExpensePayload = (payload) => {
 
   return {
     ...payload,
+    location,
     customCategory: ""
   };
 };

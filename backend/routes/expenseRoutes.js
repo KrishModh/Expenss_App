@@ -14,6 +14,7 @@ export const expenseRouter = express.Router();
 
 const expenseValidation = [
   body("title").trim().isLength({ min: 1, max: 120 }).withMessage("Title is required"),
+  body("location").optional({ checkFalsy: true }).trim().isLength({ max: 120 }).withMessage("Location must be 120 characters or fewer"),
   body("amount").isFloat({ min: 0.01 }).withMessage("Amount must be greater than 0").toFloat(),
   body("category").trim().isLength({ min: 1, max: 40 }).withMessage("Category is required"),
   body("customCategory")
@@ -32,8 +33,10 @@ expenseRouter.use(asyncHandler(requireAuth));
 
 expenseRouter.get(
   "/",
+  query("search").optional().trim().isLength({ max: 120 }),
   query("startDate").optional().isISO8601(),
   query("endDate").optional().isISO8601(),
+  query("paymentMethod").optional().isIn(["Cash", "Card", "UPI", "Online"]),
   validateRequest,
   asyncHandler(getExpenses)
 );

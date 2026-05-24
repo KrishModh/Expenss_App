@@ -7,7 +7,7 @@ import { formatMonthLabel } from "../utils/month.js";
 
 const paymentMethods = ["Cash", "Online", "UPI", "Bank"];
 const blankIncome = { source: "", amount: "", paymentMethod: "Online", date: "" };
-const defaultFilters = { startDate: "", endDate: "", paymentMethod: "" };
+const defaultFilters = { search: "", startDate: "", endDate: "", paymentMethod: "" };
 
 const reportFileName = () => {
   const date = new Date();
@@ -252,6 +252,22 @@ const Income = () => {
             <h2>Income History</h2>
           </div>
           <div className="filter-toolbar">
+            <div className="search-toolbar">
+              <label className="search-field">
+                Search income
+                <input
+                  name="search"
+                  value={filters.search}
+                  onChange={updateFilter}
+                  placeholder="Search by source or payment method"
+                />
+              </label>
+              <div className="filter-actions">
+                <button type="button" className="ghost-button" onClick={clearFilters} disabled={!hasActiveFilters}>
+                  Clear All
+                </button>
+              </div>
+            </div>
             <div className="filter-grid">
               <label>
                 Payment Method
@@ -268,11 +284,6 @@ const Income = () => {
                 To
                 <input name="endDate" type="date" value={filters.endDate} onChange={updateFilter} />
               </label>
-            </div>
-            <div className="filter-actions">
-              <button type="button" className="ghost-button" onClick={clearFilters} disabled={!hasActiveFilters}>
-                Clear Filters
-              </button>
             </div>
           </div>
           <div className="table-wrap transaction-table-wrap">

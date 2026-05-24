@@ -14,6 +14,12 @@ const expenseSchema = new mongoose.Schema(
       trim: true,
       maxlength: 120
     },
+    location: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+      default: ""
+    },
     amount: {
       type: Number,
       required: true,

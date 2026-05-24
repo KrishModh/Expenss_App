@@ -19,7 +19,7 @@
 }
 
 .main-panel {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1240px, calc(100% - 28px));
   margin: 28px auto 48px;
 }
 

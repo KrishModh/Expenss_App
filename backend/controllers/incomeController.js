@@ -1,4 +1,5 @@
 import { Income } from "../models/Income.js";
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const getCurrentMonthRange = () => {
   const now = new Date();
@@ -13,6 +14,14 @@ const getCurrentMonthRange = () => {
 
 const buildIncomeFilters = (query, userId) => {
   const filters = { user: userId };
+
+  if (query.search?.trim()) {
+    const searchPattern = new RegExp(escapeRegex(query.search.trim()), "i");
+    filters.$or = [
+      { source: searchPattern },
+      { paymentMethod: searchPattern }
+    ];
+  }
 
   if (query.paymentMethod) {
     filters.paymentMethod = query.paymentMethod;
