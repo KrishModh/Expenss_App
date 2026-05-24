@@ -3,6 +3,7 @@ import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBudget } from "../hooks/useBudget.jsx";
 import { expenseApi } from "../services/api.js";
+import { formatMonthLabel } from "../utils/month.js";
 import { currencySymbol, formatCurrency, normalizeAmountInput } from "../utils/currency.js";
 
 const categories = ["Food", "Travel", "Shopping", "Bills", "Health", "Education", "Other"];
@@ -11,7 +12,17 @@ const blankExpense = { title: "", amount: "", category: "Food", customCategory: 
 
 const Expenses = () => {
   const titleRef = useRef(null);
-  const { budgetAmount, loading: budgetLoading, error: sharedBudgetError, setMonthlyBudget } = useBudget();
+  const {
+    month,
+    budgetAmount,
+    currentMonthExpenses,
+    remainingBalance,
+    hasBudget,
+    loading: budgetLoading,
+    error: sharedBudgetError,
+    loadBudget,
+    setMonthlyBudget
+  } = useBudget();
   const [expenses, setExpenses] = useState([]);
   const [summary, setSummary] = useState({ totalExpense: 0, byPaymentMethod: {} });
   const [budgetInput, setBudgetInput] = useState("");
@@ -104,12 +115,12 @@ const Expenses = () => {
           await expenseApi.create(form);
         }
         resetForm();
-        loadExpenses();
+        await Promise.all([loadExpenses(), loadBudget()]);
       } catch (err) {
         setError(err.message);
       }
     },
-    [editingId, form, loadExpenses, resetForm]
+    [editingId, form, loadBudget, loadExpenses, resetForm]
   );
 
   const editExpense = useCallback((expense) => {
@@ -130,9 +141,9 @@ const Expenses = () => {
   const deleteExpense = useCallback(
     async (id) => {
       await expenseApi.remove(id);
-      loadExpenses();
+      await Promise.all([loadExpenses(), loadBudget()]);
     },
-    [loadExpenses]
+    [loadBudget, loadExpenses]
   );
 
   const total = useMemo(
@@ -152,17 +163,18 @@ const Expenses = () => {
   );
 
   const budgetStats = useMemo(() => {
-    const remaining = budgetAmount - total;
-    const usedPercent = budgetAmount > 0 ? Math.min((total / budgetAmount) * 100, 100) : 0;
+    const usedPercent = budgetAmount > 0 ? Math.min((currentMonthExpenses / budgetAmount) * 100, 100) : 0;
     const progressTone = usedPercent > 90 ? "danger" : usedPercent >= 70 ? "warning" : "success";
 
     return {
-      remaining,
+      remaining: remainingBalance,
       usedPercent,
       progressTone,
-      exceeded: budgetAmount > 0 && total > budgetAmount
+      exceeded: budgetAmount > 0 && currentMonthExpenses > budgetAmount
     };
-  }, [budgetAmount, total]);
+  }, [budgetAmount, currentMonthExpenses, remainingBalance]);
+
+  const monthLabel = useMemo(() => formatMonthLabel(month), [month]);
 
   const exportCsv = useCallback(() => {
     const header = ["Title", "Amount", "Category", "Payment Method", "Date"];
@@ -219,7 +231,8 @@ const Expenses = () => {
       <section className="panel budget-panel">
         <form className="budget-form" onSubmit={saveBudget}>
           <label>
-            Set Monthly Budget
+            <span className="budget-label">Set Monthly Budget</span>
+            {monthLabel && <strong className="budget-period">Budget for {monthLabel}</strong>}
             <div className="currency-input">
               <span>{currencySymbol}</span>
               <input
@@ -235,7 +248,7 @@ const Expenses = () => {
             </div>
           </label>
           <button className="primary-button" disabled={budgetLoading}>
-            {budgetLoading ? "Saving..." : budgetAmount > 0 ? "Update Budget" : "Save Budget"}
+            {budgetLoading ? "Saving..." : hasBudget ? "Update Budget" : "Save Budget"}
           </button>
         </form>
 
@@ -246,7 +259,7 @@ const Expenses = () => {
           </div>
           <div>
             <span>Spent</span>
-            <strong>{formatCurrency(total)}</strong>
+            <strong>{formatCurrency(currentMonthExpenses)}</strong>
           </div>
           <div>
             <span>Remaining</span>
@@ -262,6 +275,7 @@ const Expenses = () => {
         <div className="budget-footer">
           <small>{budgetStats.usedPercent.toFixed(1)}% of budget used</small>
           {budgetStats.exceeded && <strong className="form-error">Budget exceeded</strong>}
+          {!hasBudget && !budgetLoading && <strong>No budget set for this month</strong>}
           {budgetMessage && <strong className="ok-text">{budgetMessage}</strong>}
           {(budgetError || sharedBudgetError) && <strong className="form-error">{budgetError || sharedBudgetError}</strong>}
         </div>
@@ -390,4 +404,3 @@ const Expenses = () => {
 };
 
 export default Expenses;
-

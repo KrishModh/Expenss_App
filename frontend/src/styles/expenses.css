@@ -66,6 +66,20 @@
   gap: 14px;
 }
 
+.budget-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.budget-label {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.budget-period {
+  font-size: 1.05rem;
+}
+
 .budget-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

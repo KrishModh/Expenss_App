@@ -1,18 +1,31 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { budgetApi } from "../services/api.js";
+import { getCurrentMonthKey } from "../utils/month.js";
 import { useAuth } from "./useAuth.jsx";
 
 const BudgetContext = createContext(null);
 
 export const BudgetProvider = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
-  const [budgetAmount, setBudgetAmount] = useState(0);
+  const [budgetState, setBudgetState] = useState({
+    month: "",
+    budget: 0,
+    expenses: 0,
+    remaining: 0,
+    hasBudget: false
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const loadBudget = useCallback(async () => {
     if (!isAuthenticated) {
-      setBudgetAmount(0);
+      setBudgetState({
+        month: "",
+        budget: 0,
+        expenses: 0,
+        remaining: 0,
+        hasBudget: false
+      });
       return null;
     }
 
@@ -20,10 +33,16 @@ export const BudgetProvider = ({ children }) => {
     setError("");
 
     try {
-      const data = await budgetApi.get();
-      const amount = Number(data.budget?.budgetAmount || 0);
-      setBudgetAmount(amount);
-      return data.budget;
+      const data = await budgetApi.current();
+      const nextBudgetState = {
+        month: data.month || "",
+        budget: Number(data.budget || 0),
+        expenses: Number(data.expenses || 0),
+        remaining: Number(data.remaining || 0),
+        hasBudget: Boolean(data.hasBudget)
+      };
+      setBudgetState(nextBudgetState);
+      return nextBudgetState;
     } catch (err) {
       setError(err.message);
       return null;
@@ -36,14 +55,42 @@ export const BudgetProvider = ({ children }) => {
     loadBudget();
   }, [loadBudget, user?.id]);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return undefined;
+    }
+
+    const syncCurrentMonth = () => {
+      const activeMonth = getCurrentMonthKey();
+      if (budgetState.month && budgetState.month !== activeMonth) {
+        loadBudget();
+      }
+    };
+
+    const intervalId = window.setInterval(syncCurrentMonth, 60000);
+    window.addEventListener("focus", syncCurrentMonth);
+    document.addEventListener("visibilitychange", syncCurrentMonth);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", syncCurrentMonth);
+      document.removeEventListener("visibilitychange", syncCurrentMonth);
+    };
+  }, [budgetState.month, isAuthenticated, loadBudget]);
+
   const setMonthlyBudget = useCallback(async (budgetAmountValue) => {
     setLoading(true);
     setError("");
 
     try {
       const data = await budgetApi.set({ budgetAmount: budgetAmountValue });
-      const amount = Number(data.budget?.budgetAmount || 0);
-      setBudgetAmount(amount);
+      setBudgetState((current) => ({
+        month: data.budget?.month || current.month,
+        budget: Number(data.budget?.budgetAmount || 0),
+        expenses: current.expenses,
+        remaining: Number(data.budget?.budgetAmount || 0) - current.expenses,
+        hasBudget: true
+      }));
       return data;
     } catch (err) {
       setError(err.message);
@@ -54,8 +101,18 @@ export const BudgetProvider = ({ children }) => {
   }, []);
 
   const value = useMemo(
-    () => ({ budgetAmount, loading, error, loadBudget, setMonthlyBudget }),
-    [budgetAmount, loading, error, loadBudget, setMonthlyBudget]
+    () => ({
+      month: budgetState.month,
+      budgetAmount: budgetState.budget,
+      currentMonthExpenses: budgetState.expenses,
+      remainingBalance: budgetState.remaining,
+      hasBudget: budgetState.hasBudget,
+      loading,
+      error,
+      loadBudget,
+      setMonthlyBudget
+    }),
+    [budgetState, loading, error, loadBudget, setMonthlyBudget]
   );
 
   return <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>;

@@ -8,6 +8,7 @@ import { useAuth } from "../hooks/useAuth.jsx";
 import { useBudget } from "../hooks/useBudget.jsx";
 import { expenseApi, incomeApi } from "../services/api.js";
 import { formatCurrency } from "../utils/currency.js";
+import { formatMonthLabel } from "../utils/month.js";
 
 // ✅ Current month ki start aur end date
 const getCurrentMonthRange = () => {
@@ -23,7 +24,16 @@ const getCurrentMonthRange = () => {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { budgetAmount, loading: budgetLoading, error: budgetError, loadBudget } = useBudget();
+  const {
+    month,
+    budgetAmount,
+    currentMonthExpenses,
+    remainingBalance,
+    hasBudget,
+    loading: budgetLoading,
+    error: budgetError,
+    loadBudget
+  } = useBudget();
   const [expenses, setExpenses] = useState([]);
   const [incomes, setIncomes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,16 +67,17 @@ const Dashboard = () => {
     loadData();
   }, [loadData]);
 
+  const monthLabel = useMemo(() => formatMonthLabel(month), [month]);
+
   const summary = useMemo(() => {
     const totalIncome = incomes.reduce((sum, item) => sum + Number(item.amount), 0);
-    const totalExpenses = expenses.reduce((sum, item) => sum + Number(item.amount), 0);
     return {
       totalBudget: budgetAmount,
       totalIncome,
-      totalExpenses,
-      remaining: budgetAmount - totalExpenses
+      totalExpenses: currentMonthExpenses,
+      remaining: remainingBalance
     };
-  }, [budgetAmount, expenses, incomes]);
+  }, [budgetAmount, currentMonthExpenses, incomes, remainingBalance]);
 
   const budgetProgress = useMemo(() => {
     const usedPercent = budgetAmount > 0 ? Math.min((summary.totalExpenses / budgetAmount) * 100, 100) : 0;
@@ -120,16 +131,16 @@ const Dashboard = () => {
       {budgetError && <p className="form-error">{budgetError}</p>}
 
       <div className="metric-grid">
-        <MetricCard label="Monthly Budget" value={formatCurrency(summary.totalBudget)} />
-        <MetricCard label="Total Expenses" value={formatCurrency(summary.totalExpenses)} tone="danger" />
+        <MetricCard label={monthLabel ? `Budget • ${monthLabel}` : "Monthly Budget"} value={formatCurrency(summary.totalBudget)} />
+        <MetricCard label={monthLabel ? `Spent • ${monthLabel}` : "Total Expenses"} value={formatCurrency(summary.totalExpenses)} tone="danger" />
         <MetricCard label="Total Income" value={formatCurrency(summary.totalIncome)} tone="success" />
-        <MetricCard label="Remaining Balance" value={formatCurrency(summary.remaining)} tone="accent" />
+        <MetricCard label={monthLabel ? `Remaining • ${monthLabel}` : "Remaining Balance"} value={formatCurrency(summary.remaining)} tone="accent" />
       </div>
 
       <article className="panel dashboard-budget-panel">
         <div className="panel-heading">
-          <h2>Budget Progress</h2>
-          {budgetLoading ? <span>Loading...</span> : budgetAmount <= 0 && <span>No budget set for this month</span>}
+          <h2>{monthLabel ? `Budget Progress • ${monthLabel}` : "Budget Progress"}</h2>
+          {budgetLoading ? <span>Loading...</span> : !hasBudget && <span>No budget set for this month</span>}
         </div>
         <div className={`budget-progress ${budgetProgress.progressTone}`}>
           <span style={{ width: `${budgetProgress.usedPercent}%` }} />

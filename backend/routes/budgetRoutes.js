@@ -1,6 +1,6 @@
 import express from "express";
 import { body, query } from "express-validator";
-import { getBudget, setBudget } from "../controllers/budgetController.js";
+import { getBudget, getCurrentBudget, setBudget } from "../controllers/budgetController.js";
 import { requireAuth } from "../middleware/auth.js";
 import { validateRequest } from "../middleware/validate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -8,6 +8,11 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 export const budgetRouter = express.Router();
 
 budgetRouter.use(asyncHandler(requireAuth));
+
+budgetRouter.get(
+  "/current",
+  asyncHandler(getCurrentBudget)
+);
 
 budgetRouter.get(
   "/",

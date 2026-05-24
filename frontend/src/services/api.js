@@ -87,6 +87,7 @@ export const expenseApi = {
 };
 
 export const budgetApi = {
+  current: () => request("/budget/current"),
   get: (month) => request(`/budget${month ? `?month=${encodeURIComponent(month)}` : ""}`),
   set: (payload) =>
     request("/budget/set", {
