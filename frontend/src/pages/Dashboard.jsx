@@ -9,6 +9,17 @@ import { useBudget } from "../hooks/useBudget.jsx";
 import { expenseApi, incomeApi } from "../services/api.js";
 import { formatCurrency } from "../utils/currency.js";
 
+// ✅ Current month ki start aur end date
+const getCurrentMonthRange = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    startDate: start.toISOString().split("T")[0],
+    endDate: end.toISOString().split("T")[0]
+  };
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -22,7 +33,12 @@ const Dashboard = () => {
     setLoading(true);
     setError("");
     try {
-      const [expenseData, incomeData] = await Promise.all([expenseApi.list(), incomeApi.list()]);
+      // ✅ Sirf current month ka data fetch hoga
+      const { startDate, endDate } = getCurrentMonthRange();
+      const [expenseData, incomeData] = await Promise.all([
+        expenseApi.list({ startDate, endDate }),
+        incomeApi.list({ startDate, endDate })
+      ]);
       setExpenses(expenseData.expenses);
       setIncomes(incomeData.incomes);
     } catch (err) {
@@ -55,7 +71,6 @@ const Dashboard = () => {
   const budgetProgress = useMemo(() => {
     const usedPercent = budgetAmount > 0 ? Math.min((summary.totalExpenses / budgetAmount) * 100, 100) : 0;
     const progressTone = usedPercent > 90 ? "danger" : usedPercent >= 70 ? "warning" : "success";
-
     return {
       usedPercent,
       progressTone,
@@ -171,4 +186,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
