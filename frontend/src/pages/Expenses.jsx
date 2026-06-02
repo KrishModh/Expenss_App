@@ -2,7 +2,7 @@ import "../styles/expenses.css";
 import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBudget } from "../hooks/useBudget.jsx";
-import { expenseApi } from "../services/api.js";
+import { expenseApi, financeApi } from "../services/api.js";
 import { formatMonthLabel } from "../utils/month.js";
 import { currencySymbol, formatCurrency, normalizeAmountInput } from "../utils/currency.js";
 
@@ -10,6 +10,7 @@ const categories = ["Food", "Travel", "Shopping", "Bills", "Health", "Education"
 const methods = ["Cash", "Card", "UPI", "Online"];
 const blankExpense = { title: "", location: "", amount: "", category: "Food", customCategory: "", paymentMethod: "Cash", date: "" };
 const currentMonthSummaryDefaults = { total: 0, cash: 0, card: 0, upi: 0, online: 0, month: "" };
+const financeSummaryDefaults = { month: "", openingBalance: 0, totalIncome: 0, totalExpenses: 0, closingBalance: 0 };
 const defaultFilters = { search: "", category: "", startDate: "", endDate: "", paymentMethod: "" };
 
 const Expenses = () => {
@@ -28,6 +29,7 @@ const Expenses = () => {
   const [expenses, setExpenses] = useState([]);
   const [summary, setSummary] = useState({ totalExpense: 0, byPaymentMethod: {} });
   const [currentMonthSummary, setCurrentMonthSummary] = useState(currentMonthSummaryDefaults);
+  const [financeSummary, setFinanceSummary] = useState(financeSummaryDefaults);
   const [budgetInput, setBudgetInput] = useState("");
   const [budgetMessage, setBudgetMessage] = useState("");
   const [budgetError, setBudgetError] = useState("");
@@ -39,7 +41,10 @@ const Expenses = () => {
   const loadExpenses = useCallback(async () => {
     try {
       setError("");
-      const data = await expenseApi.list(filters);
+      const [data, financeData] = await Promise.all([
+        expenseApi.list(filters),
+        financeApi.currentMonth()
+      ]);
       setExpenses(data.expenses);
       setSummary(data.overallSummary || data.summary || { totalExpense: 0, byPaymentMethod: {} });
       setCurrentMonthSummary({
@@ -49,6 +54,13 @@ const Expenses = () => {
         upi: Number(data.currentMonthSummary?.upi || 0),
         online: Number(data.currentMonthSummary?.online || 0),
         month: data.currentMonthSummary?.month || ""
+      });
+      setFinanceSummary({
+        month: financeData.month || "",
+        openingBalance: Number(financeData.openingBalance || 0),
+        totalIncome: Number(financeData.totalIncome || 0),
+        totalExpenses: Number(financeData.totalExpenses || 0),
+        closingBalance: Number(financeData.closingBalance || 0)
       });
     } catch (err) {
       setError(err.message);
@@ -190,6 +202,16 @@ const Expenses = () => {
     [currentMonthSummary]
   );
 
+  const financialStatusCards = useMemo(
+    () => [
+      { label: "Opening Balance", value: financeSummary.openingBalance },
+      { label: "Income", value: financeSummary.totalIncome },
+      { label: "Expenses", value: financeSummary.totalExpenses },
+      { label: "Closing Balance", value: financeSummary.closingBalance }
+    ],
+    [financeSummary]
+  );
+
   const budgetStats = useMemo(() => {
     const usedPercent = budgetAmount > 0 ? Math.min((currentMonthExpenses / budgetAmount) * 100, 100) : 0;
     const progressTone = usedPercent > 90 ? "danger" : usedPercent >= 70 ? "warning" : "success";
@@ -203,6 +225,7 @@ const Expenses = () => {
   }, [budgetAmount, currentMonthExpenses, remainingBalance]);
 
   const monthLabel = useMemo(() => formatMonthLabel(month), [month]);
+  const financeMonthLabel = useMemo(() => formatMonthLabel(financeSummary.month), [financeSummary.month]);
   const expenseMonthLabel = useMemo(() => formatMonthLabel(currentMonthSummary.month), [currentMonthSummary.month]);
   const hasActiveFilters = useMemo(() => Object.values(filters).some(Boolean), [filters]);
 
@@ -231,8 +254,8 @@ const Expenses = () => {
     <section className="page-stack expenses-page">
       <div className="page-title">
         <div>
-          <p>Expenses</p>
-          <h1>{formatCurrency(total)} spent</h1>
+          <p>Current Month Expense</p>
+          <h1>{formatCurrency(currentMonthSummary.total)} Spent</h1>
         </div>
         <button className="ghost-button" onClick={exportCsv}>
           <Download size={17} />
@@ -240,30 +263,30 @@ const Expenses = () => {
         </button>
       </div>
 
-      <section className="expense-summary-grid">
-        <article className="panel expense-total-card">
-          <span>Total Spent</span>
-          <strong>{formatCurrency(total)}</strong>
-        </article>
-        {paymentBreakdown.map((item) => (
-          <article className="panel payment-card" key={item.method}>
-            <div className="payment-card-top">
-              <span>{item.method}</span>
-              <strong>{formatCurrency(item.amount)}</strong>
-            </div>
-            <div className="payment-progress" aria-label={`${item.method} ${item.percentage.toFixed(0)} percent`}>
-              <span style={{ width: `${item.percentage}%` }} />
-            </div>
-            <small>{item.percentage.toFixed(1)}%</small>
-          </article>
-        ))}
-      </section>
+      {/* <section className="page-stack current-month-expense-section">
+        <div className="section-heading">
+          <div>
+            <p>Current Month Financial Status</p>
+            <h2>{financeMonthLabel ? `${financeMonthLabel} Balance` : "Carry-forward balance"}</h2>
+          </div>
+        </div>
+        <div className="expense-summary-grid">
+          {financialStatusCards.map((item) => (
+            <article className="panel payment-card" key={item.label}>
+              <div className="payment-card-top">
+                <span>{item.label}</span>
+                <strong className={item.value < 0 ? "amount-out" : "amount-in"}>{formatCurrency(item.value)}</strong>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section> */}
 
       <section className="page-stack current-month-expense-section">
         <div className="section-heading">
           <div>
             {/* <p>Current Month Expense Summary</p> */}
-            <h2>{expenseMonthLabel ? `${expenseMonthLabel} Summary` : "Auto synced for current month"}</h2>
+            <h2>{expenseMonthLabel ? `${expenseMonthLabel} Summary` : "Current Month Summary"}</h2>
           </div>
         </div>
         <div className="expense-summary-grid">
@@ -341,6 +364,32 @@ const Expenses = () => {
           {!hasBudget && !budgetLoading && <strong>No budget set for this month</strong>}
           {budgetMessage && <strong className="ok-text">{budgetMessage}</strong>}
           {(budgetError || sharedBudgetError) && <strong className="form-error">{budgetError || sharedBudgetError}</strong>}
+        </div>
+      </section>
+
+      <section className="page-stack current-month-expense-section">
+        <div className="section-heading">
+          <div>
+            <h2>All-Time Expense Summary</h2>
+          </div>
+        </div>
+        <div className="expense-summary-grid">
+          <article className="panel expense-total-card">
+            <span>Total Spent</span>
+            <strong>{formatCurrency(total)}</strong>
+          </article>
+          {paymentBreakdown.map((item) => (
+            <article className="panel payment-card" key={item.method}>
+              <div className="payment-card-top">
+                <span>{item.method}</span>
+                <strong>{formatCurrency(item.amount)}</strong>
+              </div>
+              <div className="payment-progress" aria-label={`${item.method} ${item.percentage.toFixed(0)} percent`}>
+                <span style={{ width: `${item.percentage}%` }} />
+              </div>
+              <small>{item.percentage.toFixed(1)}%</small>
+            </article>
+          ))}
         </div>
       </section>
 

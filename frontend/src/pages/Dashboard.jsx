@@ -6,7 +6,7 @@ import MetricCard from "../components/MetricCard.jsx";
 import TransactionList from "../components/TransactionList.jsx";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { useBudget } from "../hooks/useBudget.jsx";
-import { expenseApi, incomeApi } from "../services/api.js";
+import { expenseApi, financeApi, incomeApi } from "../services/api.js";
 import { formatCurrency } from "../utils/currency.js";
 import { formatMonthLabel } from "../utils/month.js";
 
@@ -27,8 +27,6 @@ const Dashboard = () => {
   const {
     month,
     budgetAmount,
-    currentMonthExpenses,
-    remainingBalance,
     hasBudget,
     loading: budgetLoading,
     error: budgetError,
@@ -36,6 +34,13 @@ const Dashboard = () => {
   } = useBudget();
   const [expenses, setExpenses] = useState([]);
   const [incomes, setIncomes] = useState([]);
+  const [financeSummary, setFinanceSummary] = useState({
+    month: "",
+    openingBalance: 0,
+    totalIncome: 0,
+    totalExpenses: 0,
+    closingBalance: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -45,12 +50,20 @@ const Dashboard = () => {
     try {
       // ✅ Sirf current month ka data fetch hoga
       const { startDate, endDate } = getCurrentMonthRange();
-      const [expenseData, incomeData] = await Promise.all([
+      const [expenseData, incomeData, financeData] = await Promise.all([
         expenseApi.list({ startDate, endDate }),
-        incomeApi.list({ startDate, endDate })
+        incomeApi.list({ startDate, endDate }),
+        financeApi.currentMonth()
       ]);
       setExpenses(expenseData.expenses);
       setIncomes(incomeData.incomes);
+      setFinanceSummary({
+        month: financeData.month || "",
+        openingBalance: Number(financeData.openingBalance || 0),
+        totalIncome: Number(financeData.totalIncome || 0),
+        totalExpenses: Number(financeData.totalExpenses || 0),
+        closingBalance: Number(financeData.closingBalance || 0)
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -67,17 +80,36 @@ const Dashboard = () => {
     loadData();
   }, [loadData]);
 
-  const monthLabel = useMemo(() => formatMonthLabel(month), [month]);
-
-  const summary = useMemo(() => {
-    const totalIncome = incomes.reduce((sum, item) => sum + Number(item.amount), 0);
-    return {
-      totalBudget: budgetAmount,
-      totalIncome,
-      totalExpenses: currentMonthExpenses,
-      remaining: remainingBalance
+  useEffect(() => {
+    const syncDashboardCharts = () => {
+      loadData();
+      loadBudget();
     };
-  }, [budgetAmount, currentMonthExpenses, incomes, remainingBalance]);
+
+    window.addEventListener("financial-data-changed", syncDashboardCharts);
+    window.addEventListener("focus", syncDashboardCharts);
+
+    return () => {
+      window.removeEventListener("financial-data-changed", syncDashboardCharts);
+      window.removeEventListener("focus", syncDashboardCharts);
+    };
+  }, [loadBudget, loadData]);
+
+  const budgetMonthLabel = useMemo(() => formatMonthLabel(month), [month]);
+  const financeMonthLabel = useMemo(() => formatMonthLabel(financeSummary.month), [financeSummary.month]);
+
+  const summary = useMemo(
+    () => ({
+      totalBudget: Number(budgetAmount || 0),
+      remainingBudget: Number(budgetAmount || 0) - Number(financeSummary.totalExpenses || 0),
+      availableBalance: Number(financeSummary.closingBalance || 0),
+      openingBalance: Number(financeSummary.openingBalance || 0),
+      totalIncome: Number(financeSummary.totalIncome || 0),
+      totalExpenses: Number(financeSummary.totalExpenses || 0),
+      closingBalance: Number(financeSummary.closingBalance || 0)
+    }),
+    [budgetAmount, financeSummary]
+  );
 
   const budgetProgress = useMemo(() => {
     const usedPercent = budgetAmount > 0 ? Math.min((summary.totalExpenses / budgetAmount) * 100, 100) : 0;
@@ -89,13 +121,20 @@ const Dashboard = () => {
     };
   }, [budgetAmount, summary.totalExpenses]);
 
-  const chartData = useMemo(
+  const monthlyChartData = useMemo(
     () => [
       { name: "Income", value: summary.totalIncome },
       { name: "Expenses", value: summary.totalExpenses },
-      { name: "Remaining", value: Math.max(summary.remaining, 0) }
+      { name: "Budget", value: summary.totalBudget },
+      { name: "Remaining Budget", value: summary.remainingBudget },
+      { name: "Available Balance", value: summary.availableBalance }
     ],
     [summary]
+  );
+
+  const hasMonthlyChartData = useMemo(
+    () => summary.totalIncome > 0 || summary.totalExpenses > 0 || summary.totalBudget > 0,
+    [summary.totalBudget, summary.totalExpenses, summary.totalIncome]
   );
 
   const expenseByCategory = useMemo(() => {
@@ -103,8 +142,15 @@ const Dashboard = () => {
       acc[item.category] = (acc[item.category] || 0) + Number(item.amount);
       return acc;
     }, {});
-    return Object.entries(groups).map(([name, value]) => ({ name, value }));
+    return Object.entries(groups)
+      .map(([name, value]) => ({ name, value }))
+      .filter((item) => item.value > 0);
   }, [expenses]);
+
+  const hasExpenseChartData = useMemo(
+    () => expenseByCategory.reduce((sum, item) => sum + item.value, 0) > 0,
+    [expenseByCategory]
+  );
 
   const recentTransactions = useMemo(
     () =>
@@ -131,15 +177,15 @@ const Dashboard = () => {
       {budgetError && <p className="form-error">{budgetError}</p>}
 
       <div className="metric-grid">
-        <MetricCard label={monthLabel ? `Budget • ${monthLabel}` : "Monthly Budget"} value={formatCurrency(summary.totalBudget)} />
-        <MetricCard label={monthLabel ? `Spent • ${monthLabel}` : "Total Expenses"} value={formatCurrency(summary.totalExpenses)} tone="danger" />
-        <MetricCard label={monthLabel ? `Income • ${monthLabel}` : "Total Income"} value={formatCurrency(summary.totalIncome)} tone="success" />
-        <MetricCard label={monthLabel ? `Remaining • ${monthLabel}` : "Remaining Balance"} value={formatCurrency(summary.remaining)} tone="accent" />
+        <MetricCard label={financeMonthLabel ? `Opening Balance • ${financeMonthLabel}` : "Opening Balance"} value={formatCurrency(summary.openingBalance)} tone={summary.openingBalance < 0 ? "danger" : "accent"} />
+        <MetricCard label={financeMonthLabel ? `Income • ${financeMonthLabel}` : "Current Month Income"} value={formatCurrency(summary.totalIncome)} tone="success" />
+        <MetricCard label={financeMonthLabel ? `Expenses • ${financeMonthLabel}` : "Current Month Expenses"} value={formatCurrency(summary.totalExpenses)} tone="danger" />
+        <MetricCard label={financeMonthLabel ? `Closing Balance • ${financeMonthLabel}` : "Closing Balance"} value={formatCurrency(summary.closingBalance)} tone={summary.closingBalance < 0 ? "danger" : "accent"} />
       </div>
 
       <article className="panel dashboard-budget-panel">
         <div className="panel-heading">
-          <h2>{monthLabel ? `Budget Progress • ${monthLabel}` : "Budget Progress"}</h2>
+          <h2>{budgetMonthLabel ? `Budget Progress • ${budgetMonthLabel}` : "Budget Progress"}</h2>
           {budgetLoading ? <span>Loading...</span> : !hasBudget && <span>No budget set for this month</span>}
         </div>
         <div className={`budget-progress ${budgetProgress.progressTone}`}>
@@ -157,31 +203,43 @@ const Dashboard = () => {
             <h2>Monthly Summary</h2>
             {loading && <span>Loading...</span>}
           </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="name" />
-              <YAxis tickFormatter={(value) => formatCurrency(value)} />
-              <Tooltip formatter={(value) => formatCurrency(value)} />
-              <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#2563eb" />
-            </BarChart>
-          </ResponsiveContainer>
+          {hasMonthlyChartData ? (
+            <div className="chart-frame">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyChartData} margin={{ top: 12, right: 12, left: 0, bottom: 18 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" interval={0} angle={-20} textAnchor="end" height={68} tick={{ fontSize: 12 }} />
+                  <YAxis tickFormatter={(value) => formatCurrency(value)} width={82} />
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="#2563eb" isAnimationActive={false} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="chart-empty-state">No data available for current month</div>
+          )}
         </article>
 
         <article className="panel chart-panel">
           <div className="panel-heading">
             <h2>Expense Split</h2>
           </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie data={expenseByCategory} dataKey="value" nameKey="name" outerRadius={96} label>
-                {expenseByCategory.map((entry, index) => (
-                  <Cell key={entry.name} fill={["#14b8a6", "#f97316", "#6366f1", "#ef4444", "#22c55e"][index % 5]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => formatCurrency(value)} />
-            </PieChart>
-          </ResponsiveContainer>
+          {hasExpenseChartData ? (
+            <div className="chart-frame">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={expenseByCategory} dataKey="value" nameKey="name" outerRadius="78%" label>
+                    {expenseByCategory.map((entry, index) => (
+                      <Cell key={entry.name} fill={["#14b8a6", "#f97316", "#6366f1", "#ef4444", "#22c55e"][index % 5]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="chart-empty-state">No expense data available for current month</div>
+          )}
         </article>
       </div>
 

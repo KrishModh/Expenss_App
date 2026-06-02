@@ -1,4 +1,8 @@
 import { Income } from "../models/Income.js";
+import {
+  recalculateMonthlyFinanceSummaries,
+  toMonthKey
+} from "../services/monthlyFinanceService.js";
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const getCurrentMonthRange = () => {
@@ -30,7 +34,11 @@ const buildIncomeFilters = (query, userId) => {
   if (query.startDate || query.endDate) {
     filters.date = {};
     if (query.startDate) filters.date.$gte = new Date(query.startDate);
-    if (query.endDate) filters.date.$lte = new Date(query.endDate);
+    if (query.endDate) {
+      const endDate = new Date(query.endDate);
+      endDate.setDate(endDate.getDate() + 1);
+      filters.date.$lt = endDate;
+    }
   }
 
   return filters;
@@ -104,19 +112,27 @@ export const createIncome = async (req, res) => {
     user: req.user._id
   });
 
+  await recalculateMonthlyFinanceSummaries(req.user._id, toMonthKey(income.date));
+
   res.status(201).json({ income });
 };
 
 export const updateIncome = async (req, res) => {
-  const income = await Income.findOneAndUpdate(
-    { _id: req.params.id, user: req.user._id },
-    req.body,
-    { new: true, runValidators: true }
-  );
+  const income = await Income.findOne({ _id: req.params.id, user: req.user._id });
 
   if (!income) {
     return res.status(404).json({ message: "Income not found" });
   }
+
+  const previousMonth = toMonthKey(income.date);
+  Object.assign(income, req.body);
+  await income.save();
+
+  const nextMonth = toMonthKey(income.date);
+  await recalculateMonthlyFinanceSummaries(
+    req.user._id,
+    previousMonth < nextMonth ? previousMonth : nextMonth
+  );
 
   res.json({ income });
 };
@@ -127,6 +143,8 @@ export const deleteIncome = async (req, res) => {
   if (!income) {
     return res.status(404).json({ message: "Income not found" });
   }
+
+  await recalculateMonthlyFinanceSummaries(req.user._id, toMonthKey(income.date));
 
   res.json({ message: "Income deleted" });
 };

@@ -1,4 +1,8 @@
 import { Expense } from "../models/Expense.js";
+import {
+  recalculateMonthlyFinanceSummaries,
+  toMonthKey
+} from "../services/monthlyFinanceService.js";
 
 const paymentMethods = ["Cash", "Card", "UPI", "Online"];
 const defaultCategories = ["Food", "Travel", "Shopping", "Bills", "Health", "Education", "Other"];
@@ -43,7 +47,11 @@ const buildExpenseFilters = (query, userId) => {
   if (query.startDate || query.endDate) {
     filters.date = {};
     if (query.startDate) filters.date.$gte = new Date(query.startDate);
-    if (query.endDate) filters.date.$lte = new Date(query.endDate);
+    if (query.endDate) {
+      const endDate = new Date(query.endDate);
+      endDate.setDate(endDate.getDate() + 1);
+      filters.date.$lt = endDate;
+    }
   }
 
   return filters;
@@ -129,19 +137,27 @@ export const createExpense = async (req, res) => {
     user: req.user._id
   });
 
+  await recalculateMonthlyFinanceSummaries(req.user._id, toMonthKey(expense.date));
+
   res.status(201).json({ expense });
 };
 
 export const updateExpense = async (req, res) => {
-  const expense = await Expense.findOneAndUpdate(
-    { _id: req.params.id, user: req.user._id },
-    normalizeExpensePayload(req.body),
-    { new: true, runValidators: true }
-  );
+  const expense = await Expense.findOne({ _id: req.params.id, user: req.user._id });
 
   if (!expense) {
     return res.status(404).json({ message: "Expense not found" });
   }
+
+  const previousMonth = toMonthKey(expense.date);
+  Object.assign(expense, normalizeExpensePayload(req.body));
+  await expense.save();
+
+  const nextMonth = toMonthKey(expense.date);
+  await recalculateMonthlyFinanceSummaries(
+    req.user._id,
+    previousMonth < nextMonth ? previousMonth : nextMonth
+  );
 
   res.json({ expense });
 };
@@ -152,6 +168,8 @@ export const deleteExpense = async (req, res) => {
   if (!expense) {
     return res.status(404).json({ message: "Expense not found" });
   }
+
+  await recalculateMonthlyFinanceSummaries(req.user._id, toMonthKey(expense.date));
 
   res.json({ message: "Expense deleted" });
 };

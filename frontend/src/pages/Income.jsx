@@ -1,12 +1,13 @@
 import "../styles/income.css";
 import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { incomeApi } from "../services/api.js";
+import { financeApi, incomeApi } from "../services/api.js";
 import { currencySymbol, formatCurrency, normalizeAmountInput } from "../utils/currency.js";
 import { formatMonthLabel } from "../utils/month.js";
 
 const paymentMethods = ["Cash", "Online", "UPI", "Bank"];
 const blankIncome = { source: "", amount: "", paymentMethod: "Online", date: "" };
+const financeSummaryDefaults = { month: "", openingBalance: 0, totalIncome: 0, totalExpenses: 0, closingBalance: 0 };
 const defaultFilters = { search: "", startDate: "", endDate: "", paymentMethod: "" };
 
 const reportFileName = () => {
@@ -25,6 +26,7 @@ const Income = () => {
     onlineIncome: 0,
     month: ""
   });
+  const [financeSummary, setFinanceSummary] = useState(financeSummaryDefaults);
   const [filters, setFilters] = useState(defaultFilters);
   const [form, setForm] = useState(blankIncome);
   const [editingId, setEditingId] = useState("");
@@ -33,7 +35,10 @@ const Income = () => {
   const loadIncomes = useCallback(async () => {
     try {
       setError("");
-      const data = await incomeApi.list(filters);
+      const [data, financeData] = await Promise.all([
+        incomeApi.list(filters),
+        financeApi.currentMonth()
+      ]);
       setIncomes(data.filteredTransactions || data.incomes || []);
       setFilteredSummary({
         totalIncome: Number(data.filteredSummary?.totalIncome || data.totalIncome || 0),
@@ -46,6 +51,13 @@ const Income = () => {
         onlineIncome: Number(data.currentMonthSummary?.onlineIncome || 0),
         month: data.currentMonthSummary?.month || ""
       });
+      setFinanceSummary({
+        month: financeData.month || "",
+        openingBalance: Number(financeData.openingBalance || 0),
+        totalIncome: Number(financeData.totalIncome || 0),
+        totalExpenses: Number(financeData.totalExpenses || 0),
+        closingBalance: Number(financeData.closingBalance || 0)
+      });
     } catch (err) {
       setError(err.message);
     }
@@ -53,6 +65,14 @@ const Income = () => {
 
   useEffect(() => {
     loadIncomes();
+  }, [loadIncomes]);
+
+  useEffect(() => {
+    window.addEventListener("financial-data-changed", loadIncomes);
+
+    return () => {
+      window.removeEventListener("financial-data-changed", loadIncomes);
+    };
   }, [loadIncomes]);
 
   const updateForm = useCallback((event) => {
@@ -114,6 +134,7 @@ const Income = () => {
   );
 
   const total = useMemo(() => filteredSummary.totalIncome, [filteredSummary.totalIncome]);
+  const currentBalance = useMemo(() => financeSummary.closingBalance, [financeSummary.closingBalance]);
 
   const overallSummaryCards = useMemo(
     () => [
@@ -133,7 +154,17 @@ const Income = () => {
     [currentMonthSummary.cashIncome, currentMonthSummary.onlineIncome, currentMonthSummary.totalIncome]
   );
 
+  const financialStatusCards = useMemo(
+    () => [
+      { label: "Opening Balance", value: financeSummary.openingBalance },
+      { label: "Total Income", value: financeSummary.totalIncome },
+      { label: "Closing Balance", value: financeSummary.closingBalance }
+    ],
+    [financeSummary]
+  );
+
   const currentMonthLabel = useMemo(() => formatMonthLabel(currentMonthSummary.month), [currentMonthSummary.month]);
+  const financeMonthLabel = useMemo(() => formatMonthLabel(financeSummary.month), [financeSummary.month]);
   const hasActiveFilters = useMemo(() => Object.values(filters).some(Boolean), [filters]);
 
   const exportCsv = useCallback(() => {
@@ -159,8 +190,8 @@ const Income = () => {
     <section className="page-stack">
       <div className="page-title">
         <div>
-          <p>Income</p>
-          <h1>{formatCurrency(total)} received</h1>
+          <p>Current Balance</p>
+          <h1 className={currentBalance < 0 ? "amount-out" : ""}>{formatCurrency(currentBalance)} Available</h1>
         </div>
         <button className="ghost-button" onClick={exportCsv}>
           <Download size={17} />
@@ -168,22 +199,7 @@ const Income = () => {
         </button>
       </div>
 
-      <section className="page-stack income-section-block">
-        <div className="section-heading">
-          <div>
-            <p>Overall Summary</p>
-            <h2>Income statistics based on current filters</h2>
-          </div>
-        </div>
-        <div className="income-summary-grid">
-          {overallSummaryCards.map((item) => (
-            <article className="panel income-summary-card" key={item.label}>
-              <span>{item.label}</span>
-              <strong>{formatCurrency(item.value)}</strong>
-            </article>
-          ))}
-        </div>
-      </section>
+
 
       <section className="page-stack income-section-block">
         <div className="section-heading">
@@ -195,6 +211,40 @@ const Income = () => {
         <div className="income-summary-grid">
           {currentMonthCards.map((item) => (
             <article className="panel income-summary-card current-month-card" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{formatCurrency(item.value)}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="page-stack income-section-block">
+        <div className="section-heading">
+          <div>
+            {/* <p>Current Month Financial Status</p> */}
+            <h2>{financeMonthLabel ? `${financeMonthLabel} Balance` : "Carry-forward balance"}</h2>
+          </div>
+        </div>
+        <div className="income-summary-grid">
+          {financialStatusCards.map((item) => (
+            <article className="panel income-summary-card current-month-card" key={item.label}>
+              <span>{item.label}</span>
+              <strong className={item.value < 0 ? "amount-out" : "amount-in"}>{formatCurrency(item.value)}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="page-stack income-section-block">
+        <div className="section-heading">
+          <div>
+            {/* <p>Overall Summary</p> */}
+            <h2>All-Time Income Summary </h2>
+          </div>
+        </div>
+        <div className="income-summary-grid">
+          {overallSummaryCards.map((item) => (
+            <article className="panel income-summary-card" key={item.label}>
               <span>{item.label}</span>
               <strong>{formatCurrency(item.value)}</strong>
             </article>

@@ -9,6 +9,7 @@ import { expenseRouter } from "./routes/expenseRoutes.js";
 import { incomeRouter } from "./routes/incomeRoutes.js";
 import { userRouter } from "./routes/userRoutes.js";
 import { budgetRouter } from "./routes/budgetRoutes.js";
+import { financeRouter } from "./routes/financeRoutes.js";
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use("/api/user", userRouter);
 app.use("/api/expenses", expenseRouter);
 app.use("/api/income", incomeRouter);
 app.use("/api/budget", budgetRouter);
+app.use("/api/finance", financeRouter);
 
 app.use((error, _req, res, _next) => {
   console.error(error);

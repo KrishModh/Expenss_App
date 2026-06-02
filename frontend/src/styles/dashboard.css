@@ -10,9 +10,39 @@
   gap: 18px;
 }
 
+.chart-panel {
+  min-width: 0;
+}
+
+.chart-frame {
+  width: 100%;
+  height: 300px;
+  min-width: 0;
+}
+
+.chart-empty-state {
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-weight: 800;
+  text-align: center;
+  padding: 24px;
+}
+
 @media (max-width: 900px) {
   .metric-grid,
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .chart-frame,
+  .chart-empty-state {
+    height: 260px;
+    min-height: 260px;
   }
 }

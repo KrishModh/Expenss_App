@@ -27,6 +27,16 @@ const request = async (path, options = {}) => {
   return data;
 };
 
+const notifyFinancialDataChanged = () => {
+  window.dispatchEvent(new CustomEvent("financial-data-changed"));
+};
+
+const requestFinancialMutation = async (path, options) => {
+  const data = await request(path, options);
+  notifyFinancialDataChanged();
+  return data;
+};
+
 export const authApi = {
   signup: (payload) =>
     request("/auth/signup", {
@@ -74,26 +84,30 @@ export const expenseApi = {
     return request(`/expenses${query ? `?${query}` : ""}`);
   },
   create: (payload) =>
-    request("/expenses", {
+    requestFinancialMutation("/expenses", {
       method: "POST",
       body: JSON.stringify(payload)
     }),
   update: (id, payload) =>
-    request(`/expenses/${id}`, {
+    requestFinancialMutation(`/expenses/${id}`, {
       method: "PUT",
       body: JSON.stringify(payload)
     }),
-  remove: (id) => request(`/expenses/${id}`, { method: "DELETE" })
+  remove: (id) => requestFinancialMutation(`/expenses/${id}`, { method: "DELETE" })
 };
 
 export const budgetApi = {
   current: () => request("/budget/current"),
   get: (month) => request(`/budget${month ? `?month=${encodeURIComponent(month)}` : ""}`),
   set: (payload) =>
-    request("/budget/set", {
+    requestFinancialMutation("/budget/set", {
       method: "POST",
       body: JSON.stringify(payload)
     })
+};
+
+export const financeApi = {
+  currentMonth: () => request("/finance/current-month")
 };
 
 export const incomeApi = {
@@ -104,14 +118,14 @@ export const incomeApi = {
     return request(`/income${query ? `?${query}` : ""}`);
   },
   create: (payload) =>
-    request("/income", {
+    requestFinancialMutation("/income", {
       method: "POST",
       body: JSON.stringify(payload)
     }),
   update: (id, payload) =>
-    request(`/income/${id}`, {
+    requestFinancialMutation(`/income/${id}`, {
       method: "PUT",
       body: JSON.stringify(payload)
     }),
-  remove: (id) => request(`/income/${id}`, { method: "DELETE" })
+  remove: (id) => requestFinancialMutation(`/income/${id}`, { method: "DELETE" })
 };
