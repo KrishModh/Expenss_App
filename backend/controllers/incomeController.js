@@ -1,19 +1,26 @@
 import { Income } from "../models/Income.js";
 import {
+  getCurrentMonthKey,
   recalculateMonthlyFinanceSummaries,
   toMonthKey
 } from "../services/monthlyFinanceService.js";
+import {
+  calendarMonthFilter,
+  dateRangeFilter,
+  normalizeTransactionDate
+} from "../utils/month.js";
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-const getCurrentMonthRange = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  return {
-    month: `${year}-${String(month + 1).padStart(2, "0")}`,
-    startDate: new Date(year, month, 1),
-    endDate: new Date(year, month + 1, 1)
-  };
+const applyCalendarMonthFilter = (filters, monthKey) => {
+  const monthFilter = calendarMonthFilter(monthKey);
+
+  if (filters.$or) {
+    filters.$and = [{ $or: filters.$or }, monthFilter];
+    delete filters.$or;
+    return;
+  }
+
+  Object.assign(filters, monthFilter);
 };
 
 const buildIncomeFilters = (query, userId) => {
@@ -31,14 +38,10 @@ const buildIncomeFilters = (query, userId) => {
     filters.paymentMethod = query.paymentMethod;
   }
 
-  if (query.startDate || query.endDate) {
-    filters.date = {};
-    if (query.startDate) filters.date.$gte = new Date(query.startDate);
-    if (query.endDate) {
-      const endDate = new Date(query.endDate);
-      endDate.setDate(endDate.getDate() + 1);
-      filters.date.$lt = endDate;
-    }
+  if (query.monthKey) {
+    applyCalendarMonthFilter(filters, query.monthKey);
+  } else if (query.startDate || query.endDate) {
+    filters.date = dateRangeFilter(query.startDate, query.endDate);
   }
 
   return filters;
@@ -72,13 +75,10 @@ const summarizeIncomes = (incomes, month = "") =>
 
 export const getIncomes = async (req, res) => {
   const filteredFilters = buildIncomeFilters(req.query, req.user._id);
-  const { month, startDate, endDate } = getCurrentMonthRange();
+  const month = getCurrentMonthKey();
   const currentMonthFilters = {
     user: req.user._id,
-    date: {
-      $gte: startDate,
-      $lt: endDate
-    }
+    ...calendarMonthFilter(month)
   };
   const [filteredTransactions, currentMonthTransactions] = await Promise.all([
     Income.find(filteredFilters).sort({ date: -1 }),
@@ -109,6 +109,7 @@ export const getIncomes = async (req, res) => {
 export const createIncome = async (req, res) => {
   const income = await Income.create({
     ...req.body,
+    date: normalizeTransactionDate(req.body.date),
     user: req.user._id
   });
 
@@ -125,7 +126,10 @@ export const updateIncome = async (req, res) => {
   }
 
   const previousMonth = toMonthKey(income.date);
-  Object.assign(income, req.body);
+  Object.assign(income, {
+    ...req.body,
+    date: normalizeTransactionDate(req.body.date)
+  });
   await income.save();
 
   const nextMonth = toMonthKey(income.date);

@@ -11,7 +11,7 @@ const incomeValidation = [
   body("source").trim().isLength({ min: 1, max: 100 }).withMessage("Source is required"),
   body("amount").isFloat({ min: 0.01 }).withMessage("Amount must be greater than 0").toFloat(),
   body("paymentMethod").isIn(["Cash", "Online", "UPI", "Bank"]).withMessage("Invalid payment method"),
-  body("date").isISO8601().toDate().withMessage("Enter a valid date")
+  body("date").isISO8601().withMessage("Enter a valid date")
 ];
 
 incomeRouter.use(asyncHandler(requireAuth));
@@ -19,6 +19,7 @@ incomeRouter.use(asyncHandler(requireAuth));
 incomeRouter.get(
   "/",
   query("search").optional().trim().isLength({ max: 120 }),
+  query("monthKey").optional().matches(/^\d{4}-\d{2}$/).withMessage("Month must be YYYY-MM"),
   query("startDate").optional().isISO8601(),
   query("endDate").optional().isISO8601(),
   query("paymentMethod").optional().isIn(["Cash", "Online", "UPI", "Bank"]),

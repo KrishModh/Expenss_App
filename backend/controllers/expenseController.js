@@ -1,23 +1,29 @@
 import { Expense } from "../models/Expense.js";
 import {
+  getCurrentMonthKey,
   recalculateMonthlyFinanceSummaries,
   toMonthKey
 } from "../services/monthlyFinanceService.js";
+import {
+  calendarMonthFilter,
+  dateRangeFilter,
+  normalizeTransactionDate
+} from "../utils/month.js";
 
 const paymentMethods = ["Cash", "Card", "UPI", "Online"];
 const defaultCategories = ["Food", "Travel", "Shopping", "Bills", "Health", "Education", "Other"];
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-const getCurrentMonthRange = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const monthIndex = now.getMonth();
+const applyCalendarMonthFilter = (filters, monthKey) => {
+  const monthFilter = calendarMonthFilter(monthKey);
 
-  return {
-    month: `${year}-${String(monthIndex + 1).padStart(2, "0")}`,
-    startDate: new Date(year, monthIndex, 1),
-    endDate: new Date(year, monthIndex + 1, 1)
-  };
+  if (filters.$or) {
+    filters.$and = [{ $or: filters.$or }, monthFilter];
+    delete filters.$or;
+    return;
+  }
+
+  Object.assign(filters, monthFilter);
 };
 
 const buildExpenseFilters = (query, userId) => {
@@ -44,14 +50,10 @@ const buildExpenseFilters = (query, userId) => {
     filters.paymentMethod = query.paymentMethod;
   }
 
-  if (query.startDate || query.endDate) {
-    filters.date = {};
-    if (query.startDate) filters.date.$gte = new Date(query.startDate);
-    if (query.endDate) {
-      const endDate = new Date(query.endDate);
-      endDate.setDate(endDate.getDate() + 1);
-      filters.date.$lt = endDate;
-    }
+  if (query.monthKey) {
+    applyCalendarMonthFilter(filters, query.monthKey);
+  } else if (query.startDate || query.endDate) {
+    filters.date = dateRangeFilter(query.startDate, query.endDate);
   }
 
   return filters;
@@ -81,26 +83,25 @@ const normalizeExpensePayload = (payload) => {
       ...payload,
       location,
       category: customCategory,
-      customCategory
+      customCategory,
+      date: normalizeTransactionDate(payload.date)
     };
   }
 
   return {
     ...payload,
     location,
-    customCategory: ""
+    customCategory: "",
+    date: normalizeTransactionDate(payload.date)
   };
 };
 
 export const getExpenses = async (req, res) => {
   const filters = buildExpenseFilters(req.query, req.user._id);
-  const { month, startDate, endDate } = getCurrentMonthRange();
+  const month = getCurrentMonthKey();
   const currentMonthFilters = {
     user: req.user._id,
-    date: {
-      $gte: startDate,
-      $lt: endDate
-    }
+    ...calendarMonthFilter(month)
   };
   const [expenses, paymentTotals, currentMonthPaymentTotals] = await Promise.all([
     Expense.find(filters).sort({ date: -1 }),

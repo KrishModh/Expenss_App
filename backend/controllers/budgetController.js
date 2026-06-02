@@ -1,32 +1,15 @@
 import { Budget } from "../models/Budget.js";
 import { Expense } from "../models/Expense.js";
-
-const getCurrentMonth = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
-};
-
-const getMonthRange = (month) => {
-  const [year, monthNumber] = month.split("-").map(Number);
-  const startDate = new Date(year, monthNumber - 1, 1);
-  const endDate = new Date(year, monthNumber, 1);
-  return { startDate, endDate };
-};
+import { calendarMonthFilter, getCurrentMonthKey } from "../utils/month.js";
 
 const buildBudgetSnapshot = async (userId, month) => {
-  const { startDate, endDate } = getMonthRange(month);
   const [budget, expenseTotals] = await Promise.all([
     Budget.findOne({ userId, month }),
     Expense.aggregate([
       {
         $match: {
           user: userId,
-          date: {
-            $gte: startDate,
-            $lt: endDate
-          }
+          ...calendarMonthFilter(month)
         }
       },
       { $group: { _id: null, total: { $sum: "$amount" } } }
@@ -46,7 +29,7 @@ const buildBudgetSnapshot = async (userId, month) => {
 };
 
 export const getBudget = async (req, res) => {
-  const month = req.query.month || getCurrentMonth();
+  const month = req.query.month || getCurrentMonthKey();
   const budget = await Budget.findOne({ userId: req.user._id, month });
 
   res.json({
@@ -59,7 +42,7 @@ export const getBudget = async (req, res) => {
 };
 
 export const setBudget = async (req, res) => {
-  const month = req.body.month || getCurrentMonth();
+  const month = req.body.month || getCurrentMonthKey();
   const budgetAmount = Number(req.body.budgetAmount);
 
   const budget = await Budget.findOneAndUpdate(
@@ -75,7 +58,7 @@ export const setBudget = async (req, res) => {
 };
 
 export const getCurrentBudget = async (req, res) => {
-  const month = getCurrentMonth();
+  const month = getCurrentMonthKey();
   const snapshot = await buildBudgetSnapshot(req.user._id, month);
   res.json(snapshot);
 };

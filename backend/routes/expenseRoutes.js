@@ -26,7 +26,7 @@ const expenseValidation = [
     .withMessage("Custom category must be 40 characters or fewer"),
   body("customCategory").optional({ checkFalsy: true }).trim().isLength({ max: 40 }),
   body("paymentMethod").isIn(["Cash", "Card", "UPI", "Online"]).withMessage("Invalid payment method"),
-  body("date").isISO8601().toDate().withMessage("Enter a valid date")
+  body("date").isISO8601().withMessage("Enter a valid date")
 ];
 
 expenseRouter.use(asyncHandler(requireAuth));
@@ -34,6 +34,7 @@ expenseRouter.use(asyncHandler(requireAuth));
 expenseRouter.get(
   "/",
   query("search").optional().trim().isLength({ max: 120 }),
+  query("monthKey").optional().matches(/^\d{4}-\d{2}$/).withMessage("Month must be YYYY-MM"),
   query("startDate").optional().isISO8601(),
   query("endDate").optional().isISO8601(),
   query("paymentMethod").optional().isIn(["Cash", "Card", "UPI", "Online"]),

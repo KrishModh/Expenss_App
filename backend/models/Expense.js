@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { toMonthKey } from "../utils/month.js";
 
 const expenseSchema = new mongoose.Schema(
   {
@@ -45,12 +46,25 @@ const expenseSchema = new mongoose.Schema(
     date: {
       type: Date,
       required: true
+    },
+    monthKey: {
+      type: String,
+      match: /^\d{4}-\d{2}$/,
+      index: true
     }
   },
   { timestamps: true }
 );
 
+expenseSchema.pre("validate", function setMonthKey(next) {
+  if (this.date) {
+    this.monthKey = toMonthKey(this.date);
+  }
+  next();
+});
+
 expenseSchema.index({ user: 1, date: -1 });
+expenseSchema.index({ user: 1, monthKey: -1 });
 expenseSchema.index({ user: 1, category: 1 });
 
 export const Expense = mongoose.model("Expense", expenseSchema);

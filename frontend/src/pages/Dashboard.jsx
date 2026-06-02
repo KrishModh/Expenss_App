@@ -8,16 +8,13 @@ import { useAuth } from "../hooks/useAuth.jsx";
 import { useBudget } from "../hooks/useBudget.jsx";
 import { expenseApi, financeApi, incomeApi } from "../services/api.js";
 import { formatCurrency } from "../utils/currency.js";
-import { formatMonthLabel } from "../utils/month.js";
+import { formatMonthLabel, getCurrentMonthKey } from "../utils/month.js";
 
 // ✅ Current month ki start aur end date
 const getCurrentMonthRange = () => {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const monthKey = getCurrentMonthKey();
   return {
-    startDate: start.toISOString().split("T")[0],
-    endDate: end.toISOString().split("T")[0]
+    monthKey
   };
 };
 
@@ -49,10 +46,10 @@ const Dashboard = () => {
     setError("");
     try {
       // ✅ Sirf current month ka data fetch hoga
-      const { startDate, endDate } = getCurrentMonthRange();
+      const { monthKey } = getCurrentMonthRange();
       const [expenseData, incomeData, financeData] = await Promise.all([
-        expenseApi.list({ startDate, endDate }),
-        incomeApi.list({ startDate, endDate }),
+        expenseApi.list({ monthKey }),
+        incomeApi.list({ monthKey }),
         financeApi.currentMonth()
       ]);
       setExpenses(expenseData.expenses);

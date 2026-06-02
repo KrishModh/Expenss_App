@@ -1,25 +1,17 @@
 import { Expense } from "../models/Expense.js";
 import { Income } from "../models/Income.js";
 import { MonthlyFinanceSummary } from "../models/MonthlyFinanceSummary.js";
+import {
+  addMonths,
+  getCurrentMonthKey,
+  monthRange,
+  monthStartDate,
+  toMonthKey
+} from "../utils/month.js";
 
-export const getCurrentMonthKey = () => {
-  const now = new Date();
-  return toMonthKey(now);
-};
-
-export const toMonthKey = (dateValue) => {
-  const date = new Date(dateValue);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
-};
+export { getCurrentMonthKey, toMonthKey };
 
 const compareMonthKeys = (left, right) => left.localeCompare(right);
-
-const addMonths = (monthKey, amount) => {
-  const [year, month] = monthKey.split("-").map(Number);
-  return toMonthKey(new Date(year, month - 1 + amount, 1));
-};
 
 const minMonthKey = (...months) =>
   months.filter(Boolean).sort(compareMonthKeys)[0] || getCurrentMonthKey();
@@ -27,18 +19,6 @@ const minMonthKey = (...months) =>
 const maxMonthKey = (...months) => {
   const sortedMonths = months.filter(Boolean).sort(compareMonthKeys);
   return sortedMonths[sortedMonths.length - 1] || getCurrentMonthKey();
-};
-
-const monthRange = (startMonth, endMonth) => {
-  const months = [];
-  let current = startMonth;
-
-  while (compareMonthKeys(current, endMonth) <= 0) {
-    months.push(current);
-    current = addMonths(current, 1);
-  }
-
-  return months;
 };
 
 const aggregateMonthlyTotals = async (Model, userId, startMonth, endMonth) => {
@@ -56,12 +36,7 @@ const aggregateMonthlyTotals = async (Model, userId, startMonth, endMonth) => {
     },
     {
       $group: {
-        _id: {
-          $dateToString: {
-            format: "%Y-%m",
-            date: "$date"
-          }
-        },
+        _id: { $ifNull: ["$monthKey", { $dateToString: { format: "%Y-%m", date: "$date" } }] },
         total: { $sum: "$amount" }
       }
     }
@@ -88,11 +63,6 @@ const findFirstTransactionMonth = async (userId) => {
 const findLatestStoredMonth = async (userId) => {
   const summary = await MonthlyFinanceSummary.findOne({ userId }).sort({ month: -1 }).select("month");
   return summary?.month || "";
-};
-
-const monthStartDate = (monthKey) => {
-  const [year, month] = monthKey.split("-").map(Number);
-  return new Date(year, month - 1, 1);
 };
 
 export const recalculateMonthlyFinanceSummaries = async (userId, changedMonth = getCurrentMonthKey()) => {
