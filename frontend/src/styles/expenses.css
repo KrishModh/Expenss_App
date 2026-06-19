@@ -1,6 +1,6 @@
 .expense-summary-grid {
   display: grid;
-  grid-template-columns: 1.2fr repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -9,10 +9,13 @@
   box-shadow: none;
 }
 
+/* Total card spans full width as the hero row, slightly taller for visual hierarchy */
 .expense-total-card {
+  grid-column: 1 / -1;
   display: grid;
   align-content: center;
   gap: 8px;
+  padding: 24px 20px;
 }
 
 .expense-total-card span,
@@ -149,7 +152,15 @@
 }
 
 @media (max-width: 900px) {
-  .expense-summary-grid,
+  .expense-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* On tablet the Total card still spans both columns */
+  .expense-total-card {
+    grid-column: 1 / -1;
+  }
+
   .budget-form,
   .budget-metrics {
     grid-template-columns: 1fr;
@@ -165,5 +176,15 @@
 
   .search-toolbar .ghost-button {
     width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .expense-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .expense-total-card {
+    grid-column: auto;
   }
 }
