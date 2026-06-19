@@ -10,7 +10,7 @@ import {
   normalizeTransactionDate
 } from "../utils/month.js";
 
-const paymentMethods = ["Cash", "Card", "UPI", "Online"];
+const paymentMethods = ["Cash", "Card", "Online"];
 const defaultCategories = ["Food", "Travel", "Shopping", "Bills", "Health", "Education", "Other"];
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -67,7 +67,12 @@ const summarizePaymentAggregation = (paymentTotals) => {
 
   const totalExpense = paymentTotals.reduce((sum, item) => {
     const amount = Number(item.total) || 0;
-    byPaymentMethod[item._id.toLowerCase()] = amount;
+    const key = item._id?.toLowerCase();
+    // Normalize UPI → online for legacy records
+    const normalizedKey = key === "upi" ? "online" : key;
+    if (normalizedKey in byPaymentMethod) {
+      byPaymentMethod[normalizedKey] += amount;
+    }
     return sum + amount;
   }, 0);
 
@@ -125,7 +130,6 @@ export const getExpenses = async (req, res) => {
       total: currentMonthSummary.totalExpense,
       cash: Number(currentMonthSummary.byPaymentMethod.cash || 0),
       card: Number(currentMonthSummary.byPaymentMethod.card || 0),
-      upi: Number(currentMonthSummary.byPaymentMethod.upi || 0),
       online: Number(currentMonthSummary.byPaymentMethod.online || 0),
       month
     }

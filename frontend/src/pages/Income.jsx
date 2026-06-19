@@ -1,11 +1,11 @@
 import "../styles/income.css";
 import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { financeApi, incomeApi } from "../services/api.js";
+import { expenseApi, financeApi, incomeApi } from "../services/api.js";
 import { currencySymbol, formatCurrency, normalizeAmountInput } from "../utils/currency.js";
 import { formatMonthLabel } from "../utils/month.js";
 
-const paymentMethods = ["Cash", "Online", "UPI", "Bank"];
+const paymentMethods = ["Cash", "Online"];
 const blankIncome = { source: "", amount: "", paymentMethod: "Online", date: "" };
 const financeSummaryDefaults = { month: "", openingBalance: 0, totalIncome: 0, totalExpenses: 0, closingBalance: 0 };
 const defaultFilters = { search: "", startDate: "", endDate: "", paymentMethod: "" };
@@ -27,6 +27,8 @@ const Income = () => {
     month: ""
   });
   const [financeSummary, setFinanceSummary] = useState(financeSummaryDefaults);
+  const [allTimeExpenseSummary, setAllTimeExpenseSummary] = useState({ cashExpenses: 0, onlineExpenses: 0 });
+  const [allTimeIncomeSummary, setAllTimeIncomeSummary] = useState({ cashIncome: 0, onlineIncome: 0 });
   const [filters, setFilters] = useState(defaultFilters);
   const [form, setForm] = useState(blankIncome);
   const [editingId, setEditingId] = useState("");
@@ -35,9 +37,11 @@ const Income = () => {
   const loadIncomes = useCallback(async () => {
     try {
       setError("");
-      const [data, financeData] = await Promise.all([
+      const [data, financeData, allTimeIncomeData, allTimeExpenseData] = await Promise.all([
         incomeApi.list(filters),
-        financeApi.currentMonth()
+        financeApi.currentMonth(),
+        incomeApi.list({}),
+        expenseApi.list({})
       ]);
       setIncomes(data.filteredTransactions || data.incomes || []);
       setFilteredSummary({
@@ -57,6 +61,17 @@ const Income = () => {
         totalIncome: Number(financeData.totalIncome || 0),
         totalExpenses: Number(financeData.totalExpenses || 0),
         closingBalance: Number(financeData.closingBalance || 0)
+      });
+      setAllTimeIncomeSummary({
+        cashIncome: Number(allTimeIncomeData.filteredSummary?.cashIncome || allTimeIncomeData.byPaymentMethod?.cash || 0),
+        onlineIncome: Number(allTimeIncomeData.filteredSummary?.onlineIncome || allTimeIncomeData.byPaymentMethod?.online || 0)
+      });
+      setAllTimeExpenseSummary({
+        cashExpenses: Number(allTimeExpenseData.overallSummary?.byPaymentMethod?.cash || allTimeExpenseData.summary?.byPaymentMethod?.cash || 0),
+        onlineExpenses: Number(
+          allTimeExpenseData.overallSummary?.byPaymentMethod?.online ||
+          allTimeExpenseData.summary?.byPaymentMethod?.online || 0
+        )
       });
     } catch (err) {
       setError(err.message);
@@ -135,6 +150,14 @@ const Income = () => {
 
   const total = useMemo(() => filteredSummary.totalIncome, [filteredSummary.totalIncome]);
   const currentBalance = useMemo(() => financeSummary.closingBalance, [financeSummary.closingBalance]);
+  const cashBalance = useMemo(
+    () => allTimeIncomeSummary.cashIncome - allTimeExpenseSummary.cashExpenses,
+    [allTimeIncomeSummary.cashIncome, allTimeExpenseSummary.cashExpenses]
+  );
+  const onlineBalance = useMemo(
+    () => allTimeIncomeSummary.onlineIncome - allTimeExpenseSummary.onlineExpenses,
+    [allTimeIncomeSummary.onlineIncome, allTimeExpenseSummary.onlineExpenses]
+  );
 
   const overallSummaryCards = useMemo(
     () => [
@@ -197,6 +220,16 @@ const Income = () => {
           <Download size={17} />
           Export as CSV
         </button>
+      </div>
+      <div className="balance-breakdown-grid">
+        <article className="panel income-summary-card current-month-card">
+          <span>Cash Balance</span>
+          <strong className={cashBalance < 0 ? "amount-out" : "amount-in"}>{formatCurrency(cashBalance)}</strong>
+        </article>
+        <article className="panel income-summary-card current-month-card">
+          <span>Online Balance</span>
+          <strong className={onlineBalance < 0 ? "amount-out" : "amount-in"}>{formatCurrency(onlineBalance)}</strong>
+        </article>
       </div>
 
 

@@ -23,7 +23,7 @@ const incomeSchema = new mongoose.Schema(
     paymentMethod: {
       type: String,
       required: true,
-      enum: ["Cash", "Online", "UPI", "Bank"],
+      enum: ["Cash", "Online"],
       default: "Online"
     },
     date: {

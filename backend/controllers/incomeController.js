@@ -55,6 +55,7 @@ const summarizeIncomes = (incomes, month = "") =>
 
       acc.totalIncome += amount;
 
+      // Normalize legacy UPI and Bank records to Online
       if (method === "Cash") {
         acc.byPaymentMethod.cash += amount;
       } else {

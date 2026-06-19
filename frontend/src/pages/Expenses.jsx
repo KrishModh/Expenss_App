@@ -7,9 +7,9 @@ import { formatMonthLabel } from "../utils/month.js";
 import { currencySymbol, formatCurrency, normalizeAmountInput } from "../utils/currency.js";
 
 const categories = ["Food", "Travel", "Shopping", "Bills", "Health", "Education", "Other"];
-const methods = ["Cash", "Card", "UPI", "Online"];
+const methods = ["Cash", "Card", "Online"];
 const blankExpense = { title: "", location: "", amount: "", category: "Food", customCategory: "", paymentMethod: "Cash", date: "" };
-const currentMonthSummaryDefaults = { total: 0, cash: 0, card: 0, upi: 0, online: 0, month: "" };
+const currentMonthSummaryDefaults = { total: 0, cash: 0, card: 0, online: 0, month: "" };
 const financeSummaryDefaults = { month: "", openingBalance: 0, totalIncome: 0, totalExpenses: 0, closingBalance: 0 };
 const defaultFilters = { search: "", category: "", startDate: "", endDate: "", paymentMethod: "" };
 
@@ -51,7 +51,6 @@ const Expenses = () => {
         total: Number(data.currentMonthSummary?.total || 0),
         cash: Number(data.currentMonthSummary?.cash || 0),
         card: Number(data.currentMonthSummary?.card || 0),
-        upi: Number(data.currentMonthSummary?.upi || 0),
         online: Number(data.currentMonthSummary?.online || 0),
         month: data.currentMonthSummary?.month || ""
       });
@@ -196,7 +195,6 @@ const Expenses = () => {
       { label: "Total Spent", amount: currentMonthSummary.total, percentage: 100 },
       { label: "Cash", amount: currentMonthSummary.cash, percentage: currentMonthSummary.total > 0 ? (currentMonthSummary.cash / currentMonthSummary.total) * 100 : 0 },
       { label: "Card", amount: currentMonthSummary.card, percentage: currentMonthSummary.total > 0 ? (currentMonthSummary.card / currentMonthSummary.total) * 100 : 0 },
-      { label: "UPI", amount: currentMonthSummary.upi, percentage: currentMonthSummary.total > 0 ? (currentMonthSummary.upi / currentMonthSummary.total) * 100 : 0 },
       { label: "Online", amount: currentMonthSummary.online, percentage: currentMonthSummary.total > 0 ? (currentMonthSummary.online / currentMonthSummary.total) * 100 : 0 }
     ],
     [currentMonthSummary]
